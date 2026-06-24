@@ -1,0 +1,942 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Jeff's Marathon Fundraiser</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: #0a0a0f;
+      color: #f0f0f0;
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 32px 16px 48px;
+    }
+
+    /* ── Header ── */
+    .header {
+      text-align: center;
+      margin-bottom: 32px;
+    }
+    .header .event-label {
+      font-size: 12px;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      color: #f97316;
+      margin-bottom: 8px;
+    }
+    .header h1 {
+      font-size: clamp(22px, 4vw, 36px);
+      font-weight: 700;
+      color: #ffffff;
+      line-height: 1.2;
+    }
+    .header .subtitle {
+      margin-top: 8px;
+      font-size: 14px;
+      color: #888;
+    }
+
+    /* ── Stats bar ── */
+    .stats {
+      display: flex;
+      gap: 48px;
+      margin-bottom: 36px;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+    .stat { text-align: center; }
+    .stat .value {
+      font-size: clamp(28px, 5vw, 48px);
+      font-weight: 800;
+      line-height: 1;
+    }
+    .stat .value.raised { color: #22c55e; }
+    .stat .value.goal   { color: #f97316; }
+    .stat .value.pct    { color: #60a5fa; }
+    .stat .label {
+      font-size: 11px;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: #666;
+      margin-top: 4px;
+    }
+
+    /* ── SVG map container ── */
+    .map-container {
+      width: 100%;
+      max-width: 860px;
+      background: #111118;
+      border: 1px solid #222;
+      border-radius: 16px;
+      padding: 24px;
+      margin-bottom: 32px;
+      position: relative;
+    }
+    .map-title {
+      font-size: 11px;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: #555;
+      margin-bottom: 16px;
+      text-align: center;
+    }
+
+    svg#course {
+      width: 100%;
+      height: auto;
+      display: block;
+      margin: 0 auto;
+    }
+
+    /* Borough background fills */
+    .boro-fill { opacity: 0.08; }
+    .boro-si   { fill: #4a6fa5; }
+    .boro-bk   { fill: #5a8a5a; }
+    .boro-qn   { fill: #8a6a5a; }
+    .boro-bx   { fill: #7a5a8a; }
+    .boro-mn   { fill: #4a7a8a; }
+
+    /* Base route (dark) */
+    .route-base {
+      fill: none;
+      stroke: #2a2a3e;
+      stroke-width: 7;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    /* Progress overlay — driven by stroke-dashoffset */
+    .route-progress {
+      fill: none;
+      stroke: url(#progressGradient);
+      stroke-width: 7;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      transition: stroke-dashoffset 1s ease;
+    }
+
+    /* Current position pulse dot */
+    .pulse-dot {
+      fill: #f97316;
+    }
+    @keyframes pulse {
+      0%   { r: 5; opacity: 1; }
+      100% { r: 11; opacity: 0; }
+    }
+    .pulse-ring {
+      fill: none;
+      stroke: #f97316;
+      stroke-width: 2;
+      animation: pulse 1.6s ease-out infinite;
+    }
+
+    /* Borough labels */
+    .borough-label {
+      font-size: 11px;
+      fill: #3a3a5a;
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      font-weight: 600;
+    }
+
+    /* Street / bridge labels */
+    .street-label {
+      font-size: 7.5px;
+      fill: #333355;
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      letter-spacing: 0.5px;
+    }
+
+    /* Mile markers */
+    .mile-dot {
+      fill: #16161f;
+      stroke: #2a2a3e;
+      stroke-width: 1.5;
+    }
+    .mile-dot.reached {
+      fill: #15803d;
+      stroke: #22c55e;
+      stroke-width: 1.5;
+    }
+    .mile-dot.current {
+      fill: #f97316;
+      stroke: #fb923c;
+    }
+    .mile-label {
+      font-size: 8px;
+      fill: #3a3a5a;
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      font-weight: 600;
+    }
+    .mile-label.reached { fill: #22c55e; }
+
+    /* Start / Finish flags */
+    .marker-start { fill: #3b82f6; }
+    .marker-finish { fill: #f97316; }
+    .marker-label {
+      font-size: 9px;
+      font-weight: 700;
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      letter-spacing: 0.5px;
+    }
+    .marker-label.start  { fill: #60a5fa; }
+    .marker-label.finish { fill: #fb923c; }
+
+    /* ── Legend ── */
+    .legend {
+      display: flex;
+      gap: 24px;
+      justify-content: center;
+      flex-wrap: wrap;
+      margin-bottom: 28px;
+    }
+    .legend-item { display: flex; align-items: center; gap: 8px; font-size: 12px; color: #888; }
+    .legend-swatch { width: 24px; height: 6px; border-radius: 3px; }
+    .swatch-raised  { background: linear-gradient(90deg, #16a34a, #22c55e); }
+    .swatch-remaining { background: #2a2a3a; }
+    .swatch-current { background: #f97316; border-radius: 50%; width: 10px; height: 10px; }
+
+    /* ── Progress bar (secondary) ── */
+    .progress-bar-wrap {
+      width: 100%;
+      max-width: 860px;
+      margin-bottom: 28px;
+    }
+    .progress-bar-track {
+      width: 100%;
+      height: 10px;
+      background: #1e1e2e;
+      border-radius: 6px;
+      overflow: hidden;
+    }
+    .progress-bar-fill {
+      height: 100%;
+      border-radius: 6px;
+      background: linear-gradient(90deg, #15803d, #22c55e, #86efac);
+      transition: width 0.8s ease;
+    }
+    .progress-bar-labels {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 6px;
+      font-size: 11px;
+      color: #555;
+    }
+
+    /* ── Donors ── */
+    .donors-section {
+      width: 100%;
+      max-width: 860px;
+      background: #111118;
+      border: 1px solid #222;
+      border-radius: 16px;
+      padding: 24px;
+      margin-bottom: 28px;
+    }
+    .donors-section h3 {
+      font-size: 11px;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: #555;
+      margin-bottom: 16px;
+    }
+    .donor-list { display: flex; flex-direction: column; gap: 8px; }
+    .donor-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 10px 14px;
+      background: #16161f;
+      border-radius: 8px;
+      font-size: 13px;
+    }
+    .donor-name { color: #ccc; }
+    .donor-amount { color: #22c55e; font-weight: 700; font-size: 14px; }
+    .donor-message { font-size: 11px; color: #555; margin-top: 2px; font-style: italic; }
+
+    /* ── Donate CTA ── */
+    .cta {
+      text-align: center;
+      margin-bottom: 24px;
+    }
+    .cta a {
+      display: inline-block;
+      padding: 14px 40px;
+      background: linear-gradient(135deg, #ea580c, #f97316);
+      color: #fff;
+      font-weight: 700;
+      font-size: 15px;
+      border-radius: 50px;
+      text-decoration: none;
+      letter-spacing: 0.5px;
+      box-shadow: 0 4px 20px rgba(249,115,22,0.35);
+      transition: transform 0.15s, box-shadow 0.15s;
+    }
+    .cta a:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 28px rgba(249,115,22,0.5);
+    }
+    .cta p { margin-top: 10px; font-size: 12px; color: #555; }
+
+    /* ── Footer ── */
+    footer {
+      font-size: 11px;
+      color: #333;
+      text-align: center;
+    }
+
+    /* ── Edit modal ── */
+    .edit-btn {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      background: #1e1e2e;
+      border: 1px solid #333;
+      color: #888;
+      font-size: 11px;
+      padding: 8px 14px;
+      border-radius: 20px;
+      cursor: pointer;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+    }
+    .edit-btn:hover { background: #222230; color: #aaa; }
+
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.7);
+      z-index: 100;
+      align-items: center;
+      justify-content: center;
+    }
+    .modal-overlay.open { display: flex; }
+    .modal {
+      background: #16161f;
+      border: 1px solid #333;
+      border-radius: 16px;
+      padding: 32px;
+      width: 340px;
+      max-width: 90vw;
+    }
+    .modal h2 { font-size: 16px; margin-bottom: 20px; color: #fff; }
+    .modal label { display: block; font-size: 12px; color: #888; margin-bottom: 6px; letter-spacing: 1px; text-transform: uppercase; }
+    .modal input {
+      width: 100%;
+      padding: 10px 14px;
+      background: #0d0d16;
+      border: 1px solid #333;
+      border-radius: 8px;
+      color: #fff;
+      font-size: 18px;
+      margin-bottom: 20px;
+      outline: none;
+    }
+    .modal input:focus { border-color: #22c55e; }
+    .modal-actions { display: flex; gap: 12px; }
+    .btn-save {
+      flex: 1;
+      padding: 10px;
+      background: #16a34a;
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+    .btn-save:hover { background: #15803d; }
+    .btn-cancel {
+      flex: 1;
+      padding: 10px;
+      background: transparent;
+      color: #888;
+      border: 1px solid #333;
+      border-radius: 8px;
+      font-size: 14px;
+      cursor: pointer;
+    }
+    .btn-cancel:hover { background: #1a1a24; }
+
+    /* ── Donors modal ── */
+    .donors-modal-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.7);
+      z-index: 100;
+      align-items: center;
+      justify-content: center;
+    }
+    .donors-modal-overlay.open { display: flex; }
+    .donors-modal {
+      background: #16161f;
+      border: 1px solid #333;
+      border-radius: 16px;
+      padding: 32px;
+      width: 480px;
+      max-width: 92vw;
+      max-height: 80vh;
+      overflow-y: auto;
+    }
+    .donors-modal h2 { font-size: 16px; margin-bottom: 20px; color: #fff; }
+    .donor-row { display: flex; gap: 8px; margin-bottom: 10px; align-items: center; }
+    .donor-row input {
+      padding: 8px 10px;
+      background: #0d0d16;
+      border: 1px solid #333;
+      border-radius: 6px;
+      color: #fff;
+      font-size: 13px;
+      outline: none;
+    }
+    .donor-row input:focus { border-color: #22c55e; }
+    .donor-row .inp-name { flex: 2; }
+    .donor-row .inp-amt  { flex: 1; }
+    .donor-row .inp-msg  { flex: 3; }
+    .btn-add-row {
+      padding: 8px 14px;
+      background: #1e1e2e;
+      color: #888;
+      border: 1px solid #333;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 12px;
+      margin-bottom: 20px;
+    }
+    .btn-remove {
+      background: transparent;
+      border: none;
+      color: #555;
+      cursor: pointer;
+      font-size: 16px;
+      padding: 4px 6px;
+    }
+    .btn-remove:hover { color: #ef4444; }
+  </style>
+</head>
+<body>
+
+<!-- ── Header ── -->
+<div class="header">
+  <div class="event-label">2026 TCS New York City Marathon</div>
+  <h1>Jeffrey Dolson<br>Christopher &amp; Dana Reeve Foundation</h1>
+  <div class="subtitle">Running 26.2 miles for those who can't</div>
+</div>
+
+<!-- ── Stats ── -->
+<div class="stats">
+  <div class="stat">
+    <div class="value raised" id="statRaised">$437</div>
+    <div class="label">Raised</div>
+  </div>
+  <div class="stat">
+    <div class="value goal">$6,000</div>
+    <div class="label">Goal</div>
+  </div>
+  <div class="stat">
+    <div class="value pct" id="statPct">7.3%</div>
+    <div class="label">Complete</div>
+  </div>
+  <div class="stat">
+    <div class="value" id="statMile" style="color:#a78bfa">Mile 1.9</div>
+    <div class="label">Equivalent</div>
+  </div>
+</div>
+
+<!-- ── Course Map ── -->
+<div class="map-container">
+  <div class="map-title">NYC Marathon Course — Staten Island to Central Park</div>
+  <!--
+    ViewBox: 300 wide × 820 tall — portrait orientation matching the official NYRR map.
+    North is up. Scale: ~1px ≈ 0.04 miles.
+
+    GEOGRAPHIC ANCHOR POINTS (real coordinates mapped to SVG):
+      Verrazzano Bridge (start, Staten Island side): x=60, y=790
+      Verrazzano Bridge (Brooklyn side, Bay Ridge):  x=105, y=700
+      4th Ave / Atlantic Ave (Mile 8 merge):         x=105, y=480
+      Bedford Ave / Williamsburg (Mile ~11):         x=140, y=410
+      Pulaski Bridge / Greenpoint (Mile 13):         x=165, y=385
+      Long Island City / Queens Plaza (Mile ~14):    x=195, y=395
+      Queensboro Bridge Queens side (Mile ~15):      x=210, y=380
+      Queensboro Bridge Manhattan exit (Mile 16):    x=155, y=355
+      1st Ave & 60th St (Mile 16):                   x=155, y=355
+      1st Ave & 125th St (Mile ~19.5):               x=155, y=235
+      Willis Ave Bridge Manhattan side:              x=155, y=225
+      Willis Ave Bridge Bronx side:                  x=175, y=210
+      138th St Bronx turnaround:                     x=205, y=210
+      Madison Ave Bridge Bronx side:                 x=165, y=215
+      Madison Ave Bridge Manhattan side (5th/Mad):   x=148, y=225
+      5th Ave & 138th St (Mile ~21):                 x=130, y=228
+      5th Ave & 90th St (Central Park entry):        x=130, y=310
+      Central Park East Drive → south:               x=125, y=370
+      59th St / Central Park South exit:             x=125, y=400
+      Central Park South west (Columbus Circle):     x=85,  y=400
+      West Drive north to finish:                    x=85,  y=360
+      FINISH (West Drive ~67th St):                  x=85,  y=345
+  -->
+  <svg id="course" viewBox="0 0 300 820" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <linearGradient id="progressGradient" gradientUnits="userSpaceOnUse" x1="0" y1="820" x2="0" y2="0">
+        <stop offset="0%"   stop-color="#15803d"/>
+        <stop offset="50%"  stop-color="#22c55e"/>
+        <stop offset="100%" stop-color="#86efac"/>
+      </linearGradient>
+    </defs>
+
+    <!-- ── Subtle borough fills ── -->
+    <!-- Staten Island -->
+    <ellipse class="boro-fill boro-si" cx="55" cy="775" rx="52" ry="30"/>
+    <!-- Brooklyn (trapezoid, wider at south) -->
+    <polygon class="boro-fill boro-bk" points="25,750 25,430 115,410 185,425 195,520 175,640 120,755"/>
+    <!-- Queens (right side, mid height) -->
+    <polygon class="boro-fill boro-qn" points="175,380 255,375 265,450 240,510 185,510 175,460"/>
+    <!-- Manhattan (narrow vertical) -->
+    <polygon class="boro-fill boro-mn" points="105,510 110,370 118,215 125,175 160,175 162,215 158,370 152,510"/>
+    <!-- The Bronx (top right) -->
+    <polygon class="boro-fill boro-bx" points="110,225 115,160 130,140 205,140 215,185 195,225 160,235"/>
+    <!-- Central Park green tint -->
+    <rect class="boro-fill" fill="#1a4a2a" x="110" y="295" width="48" height="110" rx="6"/>
+
+    <!-- ── Borough labels ── -->
+    <text class="borough-label" x="20"  y="790">Staten Island</text>
+    <text class="borough-label" x="30"  y="620">Brooklyn</text>
+    <text class="borough-label" x="200" y="450">Queens</text>
+    <text class="borough-label" x="165" y="200">The Bronx</text>
+    <text class="borough-label" x="163" y="350">Manhattan</text>
+
+    <!-- ── Street / bridge labels ── -->
+    <!-- 4th Ave label (left of the Brooklyn straight) -->
+    <text class="street-label" x="100" y="560" text-anchor="end">4th Ave</text>
+    <!-- Bedford Ave label -->
+    <text class="street-label" x="148" y="455" text-anchor="start">Bedford Ave</text>
+    <!-- Pulaski Bridge -->
+    <text class="street-label" x="168" y="387" text-anchor="start">Pulaski Br.</text>
+    <!-- Queensboro Bridge -->
+    <text class="street-label" x="215" y="370" text-anchor="start">Queensboro Br.</text>
+    <!-- 1st Ave label -->
+    <text class="street-label" x="163" y="300" text-anchor="start">1st Ave</text>
+    <!-- Willis Ave Bridge -->
+    <text class="street-label" x="163" y="222" text-anchor="start">Willis Ave Br.</text>
+    <!-- 5th Ave / Harlem -->
+    <text class="street-label" x="108" y="258" text-anchor="end">5th Ave</text>
+    <!-- Central Park -->
+    <text class="street-label" x="134" y="308" text-anchor="middle">Central Park</text>
+
+    <!--
+      COURSE PATH — accurate schematic based on actual NYC Marathon route.
+      ViewBox 300×820, North=up.
+
+      ROUTE (continuous single path, ~26.2 miles):
+
+      A. VERRAZZANO BRIDGE (miles 0–2)
+         Start at Fort Wadsworth, SI: (60, 800)
+         Bridge goes NE to Bay Ridge, Brooklyn: (105, 710)
+
+      B. BROOKLYN — 4th Avenue northbound (miles 2–8)
+         From Bay Ridge (105,710) straight north up 4th Ave to ~Lafayette Ave (105,480)
+         Slight curve NNE — 4th Ave is nearly dead straight
+
+      C. BROOKLYN — Bedford Ave / Williamsburg / Greenpoint (miles 8–13)
+         From Lafayette Ave jog east: (105,480) → (140,460)
+         Then NNE up Bedford Ave through Williamsburg: (140,460) → (155,400)
+         Then NE to Greenpoint and Pulaski Bridge approach: (155,400) → (168,388)
+
+      D. QUEENS — Long Island City (miles 13–15.5)
+         Cross Pulaski Bridge NE: (168,388) → (185,378)
+         Arc south/SE through LIC streets: (185,378) → (215,385) → (228,375)
+         [This is the Queens detour — goes east then curves back to approach Queensboro]
+         Queensboro Bridge approach from Queens side: (228,375) → (215,360)
+         Cross Queensboro Bridge westward to Manhattan: (215,360) → (155,355)
+
+      E. MANHATTAN — 1st Avenue northbound (miles 16–19.5)
+         From 60th St & 1st Ave: (155,355)
+         Straight north up 1st Ave to 125th St: (155,230)
+
+      F. BRONX out-and-back (miles 19.5–21)
+         Willis Ave Bridge NE: (155,230) → (172,218)
+         East on 138th St in Bronx: (172,218) → (205,218)
+         [Turnaround]
+         West back on 138th St: (205,218) → (168,218)
+         Madison Ave Bridge SW back to Manhattan: (168,218) → (148,228)
+
+      G. MANHATTAN — 5th Avenue southbound (miles 21–24)
+         From Madison Ave Bridge exit ~138th & 5th Ave: (148,228) → (130,228)
+         South on 5th Ave to 90th St / Central Park Engineers Gate: (130,228) → (130,315)
+
+      H. CENTRAL PARK (miles 24–26.2)
+         Enter park at 90th & 5th (East Drive): (130,315)
+         South on East Drive: (130,315) → (128,395)
+         Exit park at 59th & 5th, turn west on Central Park South: (128,395) → (88,400)
+         Re-enter park at Columbus Circle (SW corner): (88,400)
+         North on West Drive: (88,400) → (88,358)
+         FINISH at ~67th St & West Drive: (88,345)
+    -->
+
+    <!-- THE COURSE — base (dim) -->
+    <path id="routeBase" class="route-base" d="
+      M 60,800
+      L 105,710
+      L 105,480
+      C 108,470 118,462 130,458
+      L 155,448
+      C 162,445 166,440 168,432
+      L 168,388
+      C 172,382 180,376 190,374
+      L 215,374
+      C 222,374 228,370 232,364
+      L 228,356
+      C 220,350 210,348 200,350
+      L 185,354
+      C 170,356 158,354 155,352
+      L 155,230
+      C 158,226 163,220 170,218
+      L 205,218
+      L 168,218
+      C 162,220 155,224 150,228
+      L 130,228
+      L 130,315
+      C 130,330 129,355 128,375
+      L 128,398
+      C 118,400 104,400 88,400
+      L 88,345
+    "/>
+
+    <!-- THE COURSE — progress overlay (green, same path) -->
+    <path id="routeProgress" class="route-progress" d="
+      M 60,800
+      L 105,710
+      L 105,480
+      C 108,470 118,462 130,458
+      L 155,448
+      C 162,445 166,440 168,432
+      L 168,388
+      C 172,382 180,376 190,374
+      L 215,374
+      C 222,374 228,370 232,364
+      L 228,356
+      C 220,350 210,348 200,350
+      L 185,354
+      C 170,356 158,354 155,352
+      L 155,230
+      C 158,226 163,220 170,218
+      L 205,218
+      L 168,218
+      C 162,220 155,224 150,228
+      L 130,228
+      L 130,315
+      C 130,330 129,355 128,375
+      L 128,398
+      C 118,400 104,400 88,400
+      L 88,345
+    "/>
+
+    <!-- Current position pulse dot (positioned by JS) -->
+    <g id="currentDot" style="display:none">
+      <circle class="pulse-ring" cx="0" cy="0" r="5"/>
+      <circle class="pulse-dot"  cx="0" cy="0" r="5"/>
+    </g>
+
+    <!-- Start marker -->
+    <circle cx="60" cy="800" r="7" class="marker-start"/>
+    <text class="marker-label start" x="72" y="797">START</text>
+    <text class="marker-label start" x="72" y="807" style="font-size:6.5px;fill:#3b82f6;font-weight:400">Verrazzano Bridge</text>
+
+    <!-- Finish marker -->
+    <circle cx="88" cy="345" r="7" class="marker-finish"/>
+    <text class="marker-label finish" x="76" y="335" text-anchor="end">FINISH</text>
+    <text class="marker-label finish" x="76" y="344" style="font-size:6.5px;fill:#fb923c;font-weight:400;text-anchor:end" text-anchor="end">Central Park</text>
+
+    <!-- Mile marker dots (rendered by JS) -->
+    <g id="mileMarkers"></g>
+  </svg>
+</div>
+
+<!-- ── Legend ── -->
+<div class="legend">
+  <div class="legend-item"><div class="legend-swatch swatch-raised"></div>Raised ($<span id="legRaised">437</span>)</div>
+  <div class="legend-item"><div class="legend-swatch swatch-remaining"></div>Remaining ($<span id="legRemaining">5,563</span>)</div>
+  <div class="legend-item"><div class="legend-swatch swatch-current" style="width:10px;height:10px;border-radius:50%;background:#f97316;display:inline-block;"></div>Current Position</div>
+</div>
+
+<!-- ── Progress bar ── -->
+<div class="progress-bar-wrap">
+  <div class="progress-bar-track">
+    <div class="progress-bar-fill" id="progressBarFill" style="width:7.3%"></div>
+  </div>
+  <div class="progress-bar-labels">
+    <span>$0 — Start</span>
+    <span>$1,500 — Mile 6.6</span>
+    <span>$3,000 — Mile 13.1</span>
+    <span>$4,500 — Mile 19.7</span>
+    <span>$6,000 — Finish</span>
+  </div>
+</div>
+
+<!-- ── Recent Donors ── -->
+<div class="donors-section">
+  <h3>Recent Donors</h3>
+  <div class="donor-list" id="donorList">
+    <!-- Populated by JS -->
+  </div>
+</div>
+
+<!-- ── CTA ── -->
+<div class="cta">
+  <a href="https://give.reeve.org/fundraiser/7355563" target="_blank">Donate Now</a>
+  <p>Christopher &amp; Dana Reeve Foundation · Every dollar is 100% tax deductible</p>
+</div>
+
+<footer>Updated manually · Last refreshed <span id="lastUpdated"></span></footer>
+
+<!-- ── Update button ── -->
+<button class="edit-btn" onclick="openModal()">Update Progress</button>
+
+<!-- ── Amount modal ── -->
+<div class="modal-overlay" id="modalOverlay">
+  <div class="modal">
+    <h2>Update Amount Raised</h2>
+    <label for="inputRaised">Total Raised ($)</label>
+    <input type="number" id="inputRaised" min="0" max="6000" step="1" placeholder="437" />
+    <div style="margin-bottom:16px">
+      <label style="margin-bottom:0">Update Donors</label>
+      <button style="margin-top:8px;padding:8px 14px;background:#1e1e2e;color:#aaa;border:1px solid #333;border-radius:6px;cursor:pointer;font-size:12px;" onclick="openDonorsModal()">Edit Donor List →</button>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-save" onclick="saveUpdate()">Save</button>
+      <button class="btn-cancel" onclick="closeModal()">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── Donors modal ── -->
+<div class="donors-modal-overlay" id="donorsModalOverlay">
+  <div class="donors-modal">
+    <h2>Edit Donor List</h2>
+    <div style="font-size:11px;color:#555;margin-bottom:14px;letter-spacing:.5px;">Name · Amount · Message (optional)</div>
+    <div id="donorRows"></div>
+    <button class="btn-add-row" onclick="addDonorRow()">+ Add Donor</button>
+    <div class="modal-actions">
+      <button class="btn-save" onclick="saveDonors()">Save Donors</button>
+      <button class="btn-cancel" onclick="closeDonorsModal()">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  const GOAL = 6000;
+
+  let state = {
+    raised: 437.25,
+    lastUpdated: new Date().toLocaleDateString('en-US', { month:'short', day:'numeric', year:'numeric' }),
+    donors: [
+      { name: "Lia Anico",       amount: 50,  message: "GO JEFFFFFFF" },
+      { name: "Kimberly Dolson", amount: 200, message: "Go Jeffrey! So proud of you" },
+      { name: "Kate Hodgson",    amount: 50,  message: "" },
+      { name: "Lexy Hope",       amount: 50,  message: "Proud of you, Jeffrey!" },
+      { name: "Hallie Grace",    amount: 50,  message: "" }
+    ]
+  };
+
+  const saved = localStorage.getItem('marathon_tracker');
+  if (saved) { try { state = JSON.parse(saved); } catch(e) {} }
+
+  // Mile marker positions — matched to the accurate course path
+  // (cx, cy) = position on SVG; lx/ly = label offset
+  const milePositions = [
+    { m:1,  x:88,  y:752, lx:-10, ly:0  },  // Bay Ridge / bridge landing
+    { m:2,  x:105, y:710, lx:-10, ly:0  },  // Bay Ridge
+    { m:3,  x:105, y:675, lx:-10, ly:0  },  // 4th Ave
+    { m:4,  x:105, y:640, lx:-10, ly:0  },
+    { m:5,  x:105, y:605, lx:-10, ly:0  },
+    { m:6,  x:105, y:568, lx:-10, ly:0  },
+    { m:7,  x:105, y:533, lx:-10, ly:0  },
+    { m:8,  x:105, y:498, lx:-10, ly:0  },  // Lafayette Ave / merge point
+    { m:9,  x:118, y:476, lx:0,   ly:-9 },  // jog east
+    { m:10, x:140, y:460, lx:0,   ly:-9 },  // Bedford Ave Williamsburg
+    { m:11, x:155, y:448, lx:8,   ly:0  },
+    { m:12, x:163, y:420, lx:8,   ly:0  },  // Greenpoint
+    { m:13, x:168, y:395, lx:8,   ly:0  },  // Pulaski Bridge (halfway)
+    { m:14, x:195, y:374, lx:0,   ly:-9 },  // LIC Queens
+    { m:15, x:225, y:362, lx:8,   ly:0  },  // Queensboro Bridge Queens side
+    { m:16, x:155, y:354, lx:-10, ly:0  },  // Enter Manhattan 1st Ave / 60th St
+    { m:17, x:155, y:324, lx:8,   ly:0  },  // 1st Ave
+    { m:18, x:155, y:295, lx:8,   ly:0  },
+    { m:19, x:155, y:265, lx:8,   ly:0  },
+    { m:20, x:155, y:238, lx:8,   ly:0  },  // ~125th St / Willis Ave Bridge
+    { m:21, x:195, y:218, lx:0,   ly:-9 },  // Bronx turnaround
+    { m:22, x:148, y:228, lx:-10, ly:0  },  // back to Manhattan / Madison Ave Br
+    { m:23, x:130, y:255, lx:-10, ly:0  },  // 5th Ave south Harlem
+    { m:24, x:130, y:300, lx:-10, ly:0  },  // entering Central Park
+    { m:25, x:128, y:365, lx:8,   ly:0  },  // East Drive south
+    { m:26, x:100, y:400, lx:0,   ly:10 },  // Central Park South
+  ];
+
+  let pathLength = 0;
+
+  function initPath() {
+    const path = document.getElementById('routeProgress');
+    pathLength = path.getTotalLength();
+    path.style.strokeDasharray  = pathLength;
+    path.style.strokeDashoffset = pathLength; // fully hidden initially
+  }
+
+  function getPointAtProgress(pct) {
+    const path = document.getElementById('routeProgress');
+    const len = pathLength * pct;
+    return path.getPointAtLength(len);
+  }
+
+  function render() {
+    const pct = Math.min(state.raised / GOAL, 1);
+    const milesEq = (pct * 26.2).toFixed(1);
+    const remaining = Math.max(GOAL - state.raised, 0);
+
+    // Stats
+    document.getElementById('statRaised').textContent = '$' + Math.round(state.raised).toLocaleString();
+    document.getElementById('statPct').textContent    = (pct * 100).toFixed(1) + '%';
+    document.getElementById('statMile').textContent   = 'Mile ' + milesEq;
+    document.getElementById('legRaised').textContent    = Math.round(state.raised).toLocaleString();
+    document.getElementById('legRemaining').textContent = Math.round(remaining).toLocaleString();
+    document.getElementById('lastUpdated').textContent  = state.lastUpdated;
+
+    // Progress bar
+    document.getElementById('progressBarFill').style.width = (pct * 100) + '%';
+
+    // Stroke dash offset — reveal the path from start to current progress
+    const path = document.getElementById('routeProgress');
+    path.style.strokeDashoffset = pathLength - (pathLength * pct);
+
+    // Current position dot
+    if (pct > 0 && pct < 1) {
+      const pt = getPointAtProgress(pct);
+      const dot = document.getElementById('currentDot');
+      dot.style.display = '';
+      dot.querySelectorAll('circle').forEach(c => {
+        c.setAttribute('cx', pt.x);
+        c.setAttribute('cy', pt.y);
+      });
+    } else {
+      document.getElementById('currentDot').style.display = 'none';
+    }
+
+    // Mile markers
+    const g = document.getElementById('mileMarkers');
+    g.innerHTML = '';
+    const currentMile = pct * 26.2;
+
+    milePositions.forEach(pos => {
+      const reached   = pos.m <= currentMile;
+      const isCurrent = !reached && pos.m === Math.ceil(currentMile) && pct > 0;
+      const show5     = pos.m % 5 === 0;
+      const r         = show5 ? 4.5 : 3;
+
+      const circle = document.createElementNS('http://www.w3.org/2000/svg','circle');
+      circle.setAttribute('cx', pos.x);
+      circle.setAttribute('cy', pos.y);
+      circle.setAttribute('r',  r);
+      circle.setAttribute('class', 'mile-dot' + (reached ? ' reached' : isCurrent ? ' current' : ''));
+      g.appendChild(circle);
+
+      if (show5) {
+        const txt = document.createElementNS('http://www.w3.org/2000/svg','text');
+        txt.setAttribute('x', pos.x + (pos.lx || 0));
+        txt.setAttribute('y', pos.y + (pos.ly || -8));
+        txt.setAttribute('class', 'mile-label' + (reached ? ' reached' : ''));
+        txt.setAttribute('text-anchor', pos.lx < 0 ? 'end' : pos.lx > 0 ? 'start' : 'middle');
+        txt.textContent = 'M' + pos.m;
+        g.appendChild(txt);
+      }
+    });
+
+    // Donors
+    const dl = document.getElementById('donorList');
+    dl.innerHTML = '';
+    if (state.donors.length === 0) {
+      dl.innerHTML = '<p style="color:#444;font-size:13px;padding:8px 0;">No donors yet — be the first!</p>';
+    } else {
+      state.donors.slice().reverse().forEach(d => {
+        const item = document.createElement('div');
+        item.className = 'donor-item';
+        item.innerHTML = `
+          <div>
+            <div class="donor-name">${escHtml(d.name)}</div>
+            ${d.message ? `<div class="donor-message">"${escHtml(d.message)}"</div>` : ''}
+          </div>
+          <div class="donor-amount">$${Number(d.amount).toLocaleString()}</div>
+        `;
+        dl.appendChild(item);
+      });
+    }
+  }
+
+  function escHtml(s) {
+    return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+
+  function saveState() { localStorage.setItem('marathon_tracker', JSON.stringify(state)); }
+
+  // ── Amount modal ──
+  function openModal() {
+    document.getElementById('inputRaised').value = state.raised;
+    document.getElementById('modalOverlay').classList.add('open');
+  }
+  function closeModal() { document.getElementById('modalOverlay').classList.remove('open'); }
+  function saveUpdate() {
+    const val = parseFloat(document.getElementById('inputRaised').value);
+    if (!isNaN(val) && val >= 0) {
+      state.raised = val;
+      state.lastUpdated = new Date().toLocaleDateString('en-US', { month:'short', day:'numeric', year:'numeric' });
+      saveState();
+      render();
+    }
+    closeModal();
+  }
+
+  // ── Donors modal ──
+  let tempDonors = [];
+  function openDonorsModal() {
+    tempDonors = state.donors.map(d => ({...d}));
+    renderDonorRows();
+    document.getElementById('donorsModalOverlay').classList.add('open');
+  }
+  function closeDonorsModal() { document.getElementById('donorsModalOverlay').classList.remove('open'); }
+  function renderDonorRows() {
+    const container = document.getElementById('donorRows');
+    container.innerHTML = '';
+    tempDonors.forEach((d, i) => {
+      const row = document.createElement('div');
+      row.className = 'donor-row';
+      row.innerHTML = `
+        <input class="inp-name" placeholder="Name" value="${escHtml(d.name)}" oninput="tempDonors[${i}].name=this.value" />
+        <input class="inp-amt"  placeholder="$0"   value="${d.amount}" type="number" min="0" oninput="tempDonors[${i}].amount=parseFloat(this.value)||0" />
+        <input class="inp-msg"  placeholder="Message (optional)" value="${escHtml(d.message||'')}" oninput="tempDonors[${i}].message=this.value" />
+        <button class="btn-remove" onclick="removeDonorRow(${i})">✕</button>
+      `;
+      container.appendChild(row);
+    });
+  }
+  function addDonorRow() { tempDonors.push({ name:'', amount:0, message:'' }); renderDonorRows(); }
+  function removeDonorRow(i) { tempDonors.splice(i, 1); renderDonorRows(); }
+  function saveDonors() {
+    state.donors = tempDonors.filter(d => d.name.trim());
+    saveState(); render(); closeDonorsModal();
+  }
+
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape') { closeModal(); closeDonorsModal(); }
+  });
+
+  // Init after DOM + SVG are ready
+  window.addEventListener('load', () => { initPath(); render(); });
+</script>
+</body>
+</html>
