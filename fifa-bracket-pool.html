@@ -363,6 +363,10 @@
     margin-bottom: 10px;
   }
   @keyframes spin { to { transform: rotate(360deg); } }
+  @keyframes pulse-gold {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(200,168,75,0); }
+    50% { box-shadow: 0 0 16px 4px rgba(200,168,75,0.25); }
+  }
 
   .empty-state { text-align: center; padding: 40px; color: var(--muted); font-size: 0.9rem; }
 
@@ -380,8 +384,7 @@
   <h1>FIFA World Cup 2026 <span>Bracket Pool</span></h1>
   <p>Round of 16 · Benefiting the Christopher &amp; Dana Reeve Foundation</p>
   <div class="fundraiser-note">
-    💙 All proceeds support Jeff's NYC Marathon fundraiser &nbsp;·&nbsp;
-    <a href="https://give.reeve.org/fundraiser/7355563" target="_blank">Donate directly →</a>
+    💙 50% of proceeds benefit the Christopher &amp; Dana Reeve Foundation
   </div>
 </header>
 
@@ -410,7 +413,7 @@
       More points are awarded for correct picks in later rounds.
       Entry fee is <strong style="color:var(--text)">$25</strong> — pay Jeff directly (Venmo/Cash).
       <strong style="color:var(--gold)">Brackets lock when the first R16 game kicks off (July 4).</strong><br><br>
-      <strong style="color:var(--text)">Prize pool:</strong> 70% to 1st place · 30% to 2nd place.
+      <strong style="color:var(--text)">Prize pool:</strong> 50% to the winner · 50% donated to the Christopher &amp; Dana Reeve Foundation.
     </p>
   </div>
 
@@ -467,11 +470,11 @@
     <div class="prize-split">
       <div class="prize-split-item">
         <div class="amt" id="prize-first">$0</div>
-        <div class="lbl">🥇 1st Place (70%)</div>
+        <div class="lbl">🥇 Winner (50%)</div>
       </div>
       <div class="prize-split-item">
         <div class="amt" id="prize-second">$0</div>
-        <div class="lbl">🥈 2nd Place (30%)</div>
+        <div class="lbl">💙 Reeve Foundation (50%)</div>
       </div>
     </div>
   </div>
@@ -523,8 +526,8 @@
         <div class="prize-amount" id="admin-prize-total">$0</div>
         <div class="prize-label">Total Prize Pool (<span id="admin-entry-count">0</span> paid entries × $25)</div>
         <div class="prize-split">
-          <div class="prize-split-item"><div class="amt" id="admin-prize-first">$0</div><div class="lbl">🥇 1st (70%)</div></div>
-          <div class="prize-split-item"><div class="amt" id="admin-prize-second">$0</div><div class="lbl">🥈 2nd (30%)</div></div>
+          <div class="prize-split-item"><div class="amt" id="admin-prize-first">$0</div><div class="lbl">🥇 Winner (50%)</div></div>
+          <div class="prize-split-item"><div class="amt" id="admin-prize-second">$0</div><div class="lbl">💙 Reeve Foundation (50%)</div></div>
         </div>
       </div>
     </div>
@@ -652,9 +655,32 @@ async function sbUpsert(table, body) {
   });
 }
 
-// ══════════════════════════════════════════════════════
-// STATE
-// ══════════════════════════════════════════════════════
+// Map each match to which match/slot it feeds into when won
+// r16_1 winner → qf_1 team1, r16_2 winner → qf_1 team2, etc.
+const FEEDS_INTO = {
+  r16_1: { match: 'qf_1', slot: 1 },
+  r16_2: { match: 'qf_1', slot: 2 },
+  r16_5: { match: 'qf_2', slot: 1 },
+  r16_6: { match: 'qf_2', slot: 2 },
+  r16_3: { match: 'qf_3', slot: 1 },
+  r16_4: { match: 'qf_3', slot: 2 },
+  r16_7: { match: 'qf_4', slot: 1 },
+  r16_8: { match: 'qf_4', slot: 2 },
+  qf_1:  { match: 'sf_1', slot: 1 },
+  qf_2:  { match: 'sf_1', slot: 2 },
+  qf_3:  { match: 'sf_2', slot: 1 },
+  qf_4:  { match: 'sf_2', slot: 2 },
+  sf_1:  { match: 'final_1', slot: 1 },
+  sf_2:  { match: 'final_1', slot: 2 },
+};
+
+// Flat lookup of all matches by id
+function allMatches() {
+  const map = {};
+  for (const matches of Object.values(MATCHES))
+    matches.forEach(m => { map[m.id] = m; });
+  return map;
+}
 let picks = {};          // { match_id: team_name }
 let currentEmail = localStorage.getItem('bracket_email') || '';
 let isLocked = new Date() >= BRACKET_LOCK_DATE;
@@ -694,40 +720,154 @@ function renderBracketPicker() {
     section.innerHTML = `<div class="round-label">${label} <span>${pts} pt${pts>1?'s':''} per correct pick</span></div>`;
 
     matches.forEach(m => {
-      const isTbd1 = m.team1.startsWith('TBD') || m.team1.startsWith('W ');
-      const isTbd2 = m.team2.startsWith('TBD') || m.team2.startsWith('W ');
-      const row = document.createElement('div');
-      row.className = 'match-row';
-
-      const f1 = FLAGS[m.team1] || m.flag1 || '🏳️';
-      const f2 = FLAGS[m.team2] || m.flag2 || '🏳️';
-
-      row.innerHTML = `
-        <span class="match-num">${m.date}</span>
-        <button class="team-btn ${isTbd1?'tbd':''} ${picks[m.id]===m.team1?'selected':''}"
-          onclick="${isTbd1?'':` pickTeam('${m.id}','${m.team1}',this.parentNode)`}"
-          data-match="${m.id}" data-team="${m.team1}">
-          <span class="flag">${f1}</span> ${m.team1}
-        </button>
-        <span class="vs-divider">vs</span>
-        <button class="team-btn ${isTbd2?'tbd':''} ${picks[m.id]===m.team2?'selected':''}"
-          onclick="${isTbd2?'':` pickTeam('${m.id}','${m.team2}',this.parentNode)`}"
-          data-match="${m.id}" data-team="${m.team2}">
-          <span class="flag">${f2}</span> ${m.team2}
-        </button>
-      `;
-      section.appendChild(row);
+      section.appendChild(buildMatchRow(m));
     });
 
     container.appendChild(section);
   }
+
+  renderChampionBanner();
 }
 
-function pickTeam(matchId, team, rowEl) {
+function buildMatchRow(m) {
+  const isTbd1 = !m.team1 || m.team1.startsWith('TBD') || m.team1.startsWith('W ');
+  const isTbd2 = !m.team2 || m.team2.startsWith('TBD') || m.team2.startsWith('W ');
+  const row = document.createElement('div');
+  row.className = 'match-row';
+  row.id = `match-row-${m.id}`;
+
+  const f1 = FLAGS[m.team1] || m.flag1 || '🏳️';
+  const f2 = FLAGS[m.team2] || m.flag2 || '🏳️';
+  const disp1 = isTbd1 ? (m.team1 || 'TBD') : m.team1;
+  const disp2 = isTbd2 ? (m.team2 || 'TBD') : m.team2;
+
+  row.innerHTML = `
+    <span class="match-num">${m.date}</span>
+    <button class="team-btn ${isTbd1?'tbd':''} ${picks[m.id]===m.team1&&!isTbd1?'selected':''}"
+      onclick="${isTbd1?'':` pickTeam('${m.id}', 1)`}"
+      id="btn-${m.id}-1" data-match="${m.id}" data-slot="1">
+      <span class="flag">${f1}</span> ${disp1}
+    </button>
+    <span class="vs-divider">vs</span>
+    <button class="team-btn ${isTbd2?'tbd':''} ${picks[m.id]===m.team2&&!isTbd2?'selected':''}"
+      onclick="${isTbd2?'':` pickTeam('${m.id}', 2)`}"
+      id="btn-${m.id}-2" data-match="${m.id}" data-slot="2">
+      <span class="flag">${f2}</span> ${disp2}
+    </button>
+  `;
+  return row;
+}
+
+function pickTeam(matchId, slot) {
+  const matchMap = allMatches();
+  const m = matchMap[matchId];
+  const team = slot === 1 ? m.team1 : m.team2;
+  if (!team || team.startsWith('TBD') || team.startsWith('W ')) return;
+
+  const prevPick = picks[matchId];
   picks[matchId] = team;
-  rowEl.querySelectorAll('.team-btn').forEach(b => {
-    b.classList.toggle('selected', b.dataset.team === team);
-  });
+
+  // Update button highlight
+  const btn1 = document.getElementById(`btn-${matchId}-1`);
+  const btn2 = document.getElementById(`btn-${matchId}-2`);
+  if (btn1) btn1.classList.toggle('selected', slot === 1);
+  if (btn2) btn2.classList.toggle('selected', slot === 2);
+
+  // If the pick changed, cascade: clear downstream picks that depended on old pick
+  if (prevPick && prevPick !== team) {
+    clearDownstream(matchId, prevPick);
+  }
+
+  // Propagate winner into the next match
+  const feed = FEEDS_INTO[matchId];
+  if (feed) {
+    propagate(feed.match, feed.slot, team, FLAGS[team] || '🏳️');
+  }
+
+  renderChampionBanner();
+}
+
+function propagate(matchId, slot, team, flag) {
+  const matchMap = allMatches();
+  const m = matchMap[matchId];
+  if (!m) return;
+
+  // Update the match data
+  if (slot === 1) { m.team1 = team; m.flag1 = flag; }
+  else            { m.team2 = team; m.flag2 = flag; }
+
+  // Re-render that match row
+  const existing = document.getElementById(`match-row-${matchId}`);
+  if (existing) existing.replaceWith(buildMatchRow(m));
+
+  // If there was already a pick for this match, check if it's still valid
+  if (picks[matchId]) {
+    const pick = picks[matchId];
+    if (pick !== m.team1 && pick !== m.team2) {
+      // Old pick is no longer a valid team in this slot — clear it
+      delete picks[matchId];
+      clearDownstream(matchId, pick);
+    } else {
+      // Re-propagate the existing pick downstream
+      const feed = FEEDS_INTO[matchId];
+      if (feed) propagate(feed.match, feed.slot, pick, FLAGS[pick] || '🏳️');
+    }
+  }
+}
+
+function clearDownstream(matchId, clearedTeam) {
+  const feed = FEEDS_INTO[matchId];
+  if (!feed) return;
+
+  const matchMap = allMatches();
+  const nextMatch = matchMap[feed.match];
+  if (!nextMatch) return;
+
+  // Reset the slot in the next match back to placeholder
+  const placeholder = `W ${matchId.replace('_','-').toUpperCase()}`;
+  if (feed.slot === 1) { nextMatch.team1 = placeholder; nextMatch.flag1 = '🏳️'; }
+  else                 { nextMatch.team2 = placeholder; nextMatch.flag2 = '🏳️'; }
+
+  // If the next match had a pick equal to the cleared team, remove it and cascade further
+  if (picks[feed.match] === clearedTeam) {
+    delete picks[feed.match];
+    clearDownstream(feed.match, clearedTeam);
+  }
+
+  // Re-render the next match row
+  const existing = document.getElementById(`match-row-${feed.match}`);
+  if (existing) existing.replaceWith(buildMatchRow(nextMatch));
+}
+
+function renderChampionBanner() {
+  let banner = document.getElementById('champion-banner');
+  const champion = picks['final_1'];
+  if (champion) {
+    if (!banner) {
+      banner = document.createElement('div');
+      banner.id = 'champion-banner';
+      banner.style.cssText = `
+        background: linear-gradient(135deg, rgba(200,168,75,0.2), rgba(200,168,75,0.08));
+        border: 2px solid var(--gold);
+        border-radius: 12px;
+        padding: 18px;
+        text-align: center;
+        margin-bottom: 16px;
+        animation: pulse-gold 2s ease-in-out infinite;
+      `;
+      // Insert before the bracket picker
+      const picker = document.getElementById('bracket-picker');
+      picker.parentNode.insertBefore(banner, picker);
+    }
+    banner.innerHTML = `
+      <div style="font-size:0.72rem;color:var(--muted);text-transform:uppercase;letter-spacing:1px;font-weight:700;margin-bottom:6px">Your World Cup Champion</div>
+      <div style="font-size:2rem;margin-bottom:4px">${FLAGS[champion]||'🏆'}</div>
+      <div style="font-size:1.4rem;font-weight:800;color:var(--gold)">${champion}</div>
+      <div style="font-size:0.78rem;color:var(--muted);margin-top:4px">+8 pts if correct</div>
+    `;
+  } else if (banner) {
+    banner.remove();
+  }
 }
 
 // ══════════════════════════════════════════════════════
@@ -879,8 +1019,8 @@ async function loadLeaderboard() {
     if (prizePool > 0) {
       document.getElementById('prize-display').style.display = 'block';
       document.getElementById('prize-total').textContent = `$${prizePool}`;
-      document.getElementById('prize-first').textContent = `$${Math.floor(prizePool * 0.7)}`;
-      document.getElementById('prize-second').textContent = `$${Math.floor(prizePool * 0.3)}`;
+      document.getElementById('prize-first').textContent = `$${Math.floor(prizePool * 0.5)}`;
+      document.getElementById('prize-second').textContent = `$${Math.floor(prizePool * 0.5)}`;
     }
 
     if (scored.length === 0) {
@@ -1109,8 +1249,8 @@ async function loadAdminParticipants() {
     const pool = paidCount * ENTRY_FEE;
     document.getElementById('admin-prize-total').textContent = `$${pool}`;
     document.getElementById('admin-entry-count').textContent = paidCount;
-    document.getElementById('admin-prize-first').textContent = `$${Math.floor(pool*0.7)}`;
-    document.getElementById('admin-prize-second').textContent = `$${Math.floor(pool*0.3)}`;
+    document.getElementById('admin-prize-first').textContent = `$${Math.floor(pool*0.5)}`;
+    document.getElementById('admin-prize-second').textContent = `$${Math.floor(pool*0.5)}`;
 
     let html = `<table class="leaderboard-table" style="margin-bottom:8px;">
       <thead><tr><th>Name</th><th>Email</th><th>Joined</th><th>Paid</th><th></th></tr></thead><tbody>`;
