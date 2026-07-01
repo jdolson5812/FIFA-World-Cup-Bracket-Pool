@@ -749,9 +749,9 @@ const MATCHES = {
   ],
   qf: [
     { id:'qf_1', team1:'W R16-1', team2:'W R16-2', flag1:'🏳️', flag2:'🏳️', date:'Jul 9' },
-    { id:'qf_2', team1:'W R16-5', team2:'W R16-6', flag1:'🏳️', flag2:'🏳️', date:'Jul 10' },
-    { id:'qf_3', team1:'W R16-3', team2:'W R16-4', flag1:'🏳️', flag2:'🏳️', date:'Jul 11' },
-    { id:'qf_4', team1:'W R16-7', team2:'W R16-8', flag1:'🏳️', flag2:'🏳️', date:'Jul 12' },
+    { id:'qf_2', team1:'W R16-3', team2:'W R16-4', flag1:'🏳️', flag2:'🏳️', date:'Jul 9' },
+    { id:'qf_3', team1:'W R16-5', team2:'W R16-6', flag1:'🏳️', flag2:'🏳️', date:'Jul 10' },
+    { id:'qf_4', team1:'W R16-7', team2:'W R16-8', flag1:'🏳️', flag2:'🏳️', date:'Jul 10' },
   ],
   sf: [
     { id:'sf_1', team1:'W QF-1', team2:'W QF-2', flag1:'🏳️', flag2:'🏳️', date:'Jul 14' },
@@ -825,14 +825,14 @@ async function sbUpsert(table, body) {
 }
 
 // Map each match to which match/slot it feeds into when won
-// r16_1 winner → qf_1 team1, r16_2 winner → qf_1 team2, etc.
+// r16_1+r16_2 → qf_1, r16_3+r16_4 → qf_2, r16_5+r16_6 → qf_3, r16_7+r16_8 → qf_4
 const FEEDS_INTO = {
   r16_1: { match: 'qf_1', slot: 1 },
   r16_2: { match: 'qf_1', slot: 2 },
-  r16_5: { match: 'qf_2', slot: 1 },
-  r16_6: { match: 'qf_2', slot: 2 },
-  r16_3: { match: 'qf_3', slot: 1 },
-  r16_4: { match: 'qf_3', slot: 2 },
+  r16_3: { match: 'qf_2', slot: 1 },
+  r16_4: { match: 'qf_2', slot: 2 },
+  r16_5: { match: 'qf_3', slot: 1 },
+  r16_6: { match: 'qf_3', slot: 2 },
   r16_7: { match: 'qf_4', slot: 1 },
   r16_8: { match: 'qf_4', slot: 2 },
   qf_1:  { match: 'sf_1', slot: 1 },
@@ -856,10 +856,9 @@ let currentParticipantId = null;  // tracks which bracket row we're editing
 let isLocked = new Date() >= BRACKET_LOCK_DATE;
 let adminAuthed = false;
 
-// Visual display order for bracket tree — r16 reordered so pairs align with QF slots
-// r16_1+r16_2 → qf_1 (top), r16_5+r16_6 → qf_2, r16_3+r16_4 → qf_3, r16_7+r16_8 → qf_4 (bottom)
+// Visual display order for bracket tree — matches ESPN natural top-to-bottom order
 const DISPLAY_ORDER = {
-  r16:   ['r16_1','r16_2','r16_5','r16_6','r16_3','r16_4','r16_7','r16_8'],
+  r16:   ['r16_1','r16_2','r16_3','r16_4','r16_5','r16_6','r16_7','r16_8'],
   qf:    ['qf_1','qf_2','qf_3','qf_4'],
   sf:    ['sf_1','sf_2'],
   final: ['final_1'],
