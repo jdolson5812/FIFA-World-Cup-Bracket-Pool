@@ -1002,11 +1002,9 @@ async function submitBracket() {
     }));
 
     if (bracketRows.length > 0) {
-      await sb('brackets?on_conflict=participant_id,match_id', {
-        method: 'POST',
-        body: JSON.stringify(bracketRows),
-        headers: { 'Prefer': 'resolution=merge-duplicates,return=representation' }
-      });
+      // Delete existing picks for this participant then re-insert
+      await sb(`brackets?participant_id=eq.${participant.id}`, { method: 'DELETE' });
+      await sbPost('brackets', bracketRows);
     }
 
     localStorage.setItem('bracket_email', email);
