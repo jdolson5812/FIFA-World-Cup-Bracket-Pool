@@ -740,12 +740,12 @@ const MATCHES = {
   r16: [
     { id:'r16_1', team1:'Paraguay',  team2:'France',   flag1:'🇵🇾', flag2:'🇫🇷', date:'Jul 4' },
     { id:'r16_2', team1:'Canada',    team2:'Morocco',  flag1:'🇨🇦', flag2:'🇲🇦', date:'Jul 4' },
-    { id:'r16_3', team1:'Portugal',  team2:'Spain',    flag1:'🇵🇹', flag2:'🇪🇸', date:'Jul 6' },
-    { id:'r16_4', team1:'USA',       team2:'Belgium',  flag1:'🇺🇸', flag2:'🇧🇪', date:'Jul 6' },
+    { id:'r16_3', team1:'W Portugal/Croatia', team2:'W Spain/Austria',      flag1:'🏳️', flag2:'🏳️', date:'Jul 6' },
+    { id:'r16_4', team1:'W USA/Bosnia-Herz', team2:'Belgium',              flag1:'🏳️', flag2:'🇧🇪', date:'Jul 6' },
     { id:'r16_5', team1:'Brazil',    team2:'Norway',   flag1:'🇧🇷', flag2:'🇳🇴', date:'Jul 5' },
     { id:'r16_6', team1:'Mexico',    team2:'England',  flag1:'🇲🇽', flag2:'🏴󠁧󠁢󠁥󠁮󠁧󠁿', date:'Jul 5' },
-    { id:'r16_7', team1:'Argentina', team2:'Australia',flag1:'🇦🇷', flag2:'🇦🇺', date:'Jul 7' },
-    { id:'r16_8', team1:'Switzerland',team2:'Colombia',flag1:'🇨🇭', flag2:'🇨🇴', date:'Jul 7' },
+    { id:'r16_7', team1:'W Argentina/Cape Verde', team2:'W Australia/Egypt',  flag1:'🏳️', flag2:'🏳️', date:'Jul 7' },
+    { id:'r16_8', team1:'W Switzerland/Algeria', team2:'W Colombia/Ghana',   flag1:'🏳️', flag2:'🏳️', date:'Jul 7' },
   ],
   qf: [
     { id:'qf_1', team1:'W R16-1', team2:'W R16-2', flag1:'🏳️', flag2:'🏳️', date:'Jul 9' },
@@ -1004,8 +1004,8 @@ function buildMatchCard(m, interactive, readOnly, picksObj, resultMap) {
   const isTbd2 = !m.team2 || m.team2.startsWith('TBD') || m.team2.startsWith('W ');
   const f1 = FLAGS[m.team1] || m.flag1 || '🏳️';
   const f2 = FLAGS[m.team2] || m.flag2 || '🏳️';
-  const disp1 = isTbd1 ? (m.team1 || 'TBD') : m.team1;
-  const disp2 = isTbd2 ? (m.team2 || 'TBD') : m.team2;
+  const disp1 = isTbd1 ? (m.team1 ? m.team1.replace(/^W /, '') : 'TBD') : m.team1;
+  const disp2 = isTbd2 ? (m.team2 ? m.team2.replace(/^W /, '') : 'TBD') : m.team2;
 
   const card = document.createElement('div');
   card.className = 'bracket-match' + (isLocked && !readOnly ? ' locked' : '');
@@ -1965,8 +1965,8 @@ function buildAdminMatchCard(m) {
   const isTbd2 = !m.team2 || m.team2.startsWith('TBD') || m.team2.startsWith('W ');
   const f1 = FLAGS[m.team1] || m.flag1 || '🏳️';
   const f2 = FLAGS[m.team2] || m.flag2 || '🏳️';
-  const disp1 = isTbd1 ? (m.team1 || 'TBD') : m.team1;
-  const disp2 = isTbd2 ? (m.team2 || 'TBD') : m.team2;
+  const disp1 = isTbd1 ? (m.team1 ? m.team1.replace(/^W /, '') : 'TBD') : m.team1;
+  const disp2 = isTbd2 ? (m.team2 ? m.team2.replace(/^W /, '') : 'TBD') : m.team2;
 
   const card = document.createElement('div');
   card.className = 'bracket-match';
