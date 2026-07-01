@@ -1002,7 +1002,11 @@ async function submitBracket() {
     }));
 
     if (bracketRows.length > 0) {
-      await sbUpsert('brackets', bracketRows);
+      await sb('brackets', {
+        method: 'POST',
+        body: JSON.stringify(bracketRows),
+        headers: { 'Prefer': 'resolution=merge-duplicates,return=representation', 'on-conflict': 'participant_id,match_id' }
+      });
     }
 
     localStorage.setItem('bracket_email', email);
