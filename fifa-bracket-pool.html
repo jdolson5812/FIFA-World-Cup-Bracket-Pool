@@ -1760,7 +1760,9 @@ async function loadMyBracket() {
       participants.map(p => sbGet('brackets', `participant_id=eq.${p.id}`))
     );
 
-    let html = '';
+    const container = document.getElementById('my-bracket-display');
+    container.innerHTML = '';
+
     participants.forEach((p, idx) => {
       const myPicks = {};
       allBracketRows[idx].forEach(b => { myPicks[b.match_id] = b.picked_team; });
@@ -1773,25 +1775,42 @@ async function loadMyBracket() {
         });
       }
 
-      const title = p.bracket_name
+      const card = document.createElement('div');
+      card.className = 'card';
+
+      // Header row with title + optional edit button
+      const headerRow = document.createElement('div');
+      headerRow.style.cssText = 'display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px;';
+
+      const h2 = document.createElement('h2');
+      h2.style.marginBottom = '0';
+      h2.innerHTML = p.bracket_name
         ? `${p.name} <span style="color:var(--muted);font-size:0.85rem">(${p.bracket_name})</span>`
         : p.name;
+      headerRow.appendChild(h2);
 
-      html += `
-        <div class="card">
-          <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px;">
-            <h2 style="margin-bottom:0;">${title}</h2>
-            ${!isLocked ? `<button class="btn btn-sm" style="background:var(--border);color:var(--text);flex-shrink:0;margin-left:12px;" onclick="editFromMyBracket('${p.id}',${JSON.stringify(p.bracket_name)})">Edit Picks</button>` : ''}
-          </div>
-          ${renderPickDetail(myPicks, resultMap, p.tiebreaker)}
-          <div style="margin-top:16px;padding-top:12px;border-top:1px solid var(--border);">
-            <span class="score-badge" style="font-size:1rem;padding:6px 18px;">Total: ${score} pts</span>
-          </div>
-        </div>
-      `;
+      if (!isLocked) {
+        const editBtn = document.createElement('button');
+        editBtn.className = 'btn btn-sm';
+        editBtn.style.cssText = 'background:var(--border);color:var(--text);flex-shrink:0;margin-left:12px;';
+        editBtn.textContent = 'Edit Picks';
+        editBtn.onclick = () => editFromMyBracket(p.id, p.bracket_name);
+        headerRow.appendChild(editBtn);
+      }
+
+      card.appendChild(headerRow);
+
+      // Pick detail tree
+      card.insertAdjacentHTML('beforeend', renderPickDetail(myPicks, resultMap, p.tiebreaker));
+
+      // Score
+      const scoreRow = document.createElement('div');
+      scoreRow.style.cssText = 'margin-top:16px;padding-top:12px;border-top:1px solid var(--border);';
+      scoreRow.innerHTML = `<span class="score-badge" style="font-size:1rem;padding:6px 18px;">Total: ${score} pts</span>`;
+      card.appendChild(scoreRow);
+
+      container.appendChild(card);
     });
-
-    container.innerHTML = html;
   } catch(e) {
     container.innerHTML = `<div class="card"><p style="color:var(--muted)">Error: ${e.message}</p></div>`;
   }
