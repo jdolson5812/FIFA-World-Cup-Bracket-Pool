@@ -411,14 +411,17 @@
     <p style="font-size:0.83rem;color:var(--muted);line-height:1.5;">
       Pick the winner of every game from the Round of 16 through the Final.
       More points are awarded for correct picks in later rounds.
-      Entry fee is <strong style="color:var(--text)">$25</strong> — pay Jeff on Venmo, then submit your bracket below.
+      Entry fee is <strong style="color:var(--text)">$25</strong> — pay Jeff on Venmo or donate directly to the Reeve Foundation below.
       <strong style="color:var(--gold)">Brackets lock when the first R16 game kicks off (July 4).</strong><br><br>
       <strong style="color:var(--text)">Prize pool:</strong> 50% to the winner · 50% donated to the Christopher &amp; Dana Reeve Foundation.
     </p>
-    <div style="margin-top:14px;">
+    <div style="margin-top:14px;display:flex;flex-wrap:wrap;gap:10px;">
       <a href="https://venmo.com/Jeffrey-Dolson" target="_blank" class="btn btn-gold" style="display:inline-flex;align-items:center;gap:8px;text-decoration:none;font-size:0.9rem;">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M19.5 2c.8 1.4 1.2 2.8 1.2 4.6 0 5.7-4.9 13.1-8.9 18.4H3.9L.5 2.9l7.4-.7 1.8 14.4c1.7-2.8 3.8-7.2 3.8-10.2 0-1.6-.3-2.8-.8-3.8L19.5 2z"/></svg>
         Pay @Jeffrey-Dolson on Venmo
+      </a>
+      <a href="https://give.reeve.org/fundraiser/7355563" target="_blank" class="btn btn-primary" style="display:inline-flex;align-items:center;gap:8px;text-decoration:none;font-size:0.9rem;">
+        💙 Donate to Reeve Foundation
       </a>
     </div>
   </div>
@@ -435,8 +438,8 @@
         <input type="email" id="reg-email" placeholder="you@email.com">
       </div>
       <div class="form-group">
-        <label>Bracket Name <span style="color:var(--muted);font-weight:400">(optional — e.g. "My Bracket #2")</span></label>
-        <input type="text" id="reg-bracket-name" placeholder="Leave blank for default">
+        <label>Bracket Name</label>
+        <input type="text" id="reg-bracket-name" placeholder="e.g. Jeff's Bracket, Dark Horse, etc.">
       </div>
     </div>
 
@@ -922,6 +925,7 @@ async function submitBracket() {
 
   if (!name)  { toast('Please enter your name', true); return; }
   if (!email || !email.includes('@')) { toast('Please enter a valid email', true); return; }
+  if (!bracketName) { toast('Please enter a bracket name', true); return; }
 
   // Validate all R16 picks with known teams
   const knownR16 = MATCHES.r16.filter(m =>
@@ -957,10 +961,14 @@ async function submitBracket() {
         participant = existing[0];
         await sbPatch('participants', `id=eq.${participant.id}`, { name });
       } else {
-        const created = await sbPost('participants', { name, email, bracket_name: bracketName });
-        participant = created[0];
+        await sbPost('participants', { name, email, bracket_name: bracketName });
+        // Re-fetch to guarantee we have the id regardless of Prefer header behaviour
+        const fetched = await sbGet('participants',
+          `email=eq.${encodeURIComponent(email)}&bracket_name=eq.${encodeURIComponent(bracketName)}`);
+        if (!fetched.length) throw new Error('Could not retrieve saved participant — please try again.');
+        participant = fetched[0];
         // Notify Google Sheet of new signup
-        await notifySheet(name, email, bracketName || 'Default');
+        await notifySheet(name, email, bracketName);
       }
     }
 
