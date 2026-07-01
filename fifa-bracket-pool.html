@@ -970,8 +970,7 @@ async function submitBracket() {
     if (currentParticipantId) {
       // Updating an existing bracket — patch name and tiebreaker if changed
       await sbPatch('participants', `id=eq.${currentParticipantId}`, { name, tiebreaker });
-      participant = { id: currentParticipantId };
-    } else {
+      participant = { id: currentParticipantId };    } else {
       // Check if this exact (email, bracket_name) combo already exists
       const query = bracketName
         ? `email=eq.${encodeURIComponent(email)}&bracket_name=eq.${encodeURIComponent(bracketName)}`
@@ -1002,8 +1001,10 @@ async function submitBracket() {
     }));
 
     if (bracketRows.length > 0) {
-      // Delete existing picks for this participant then re-insert
-      await sb(`brackets?participant_id=eq.${participant.id}`, { method: 'DELETE' });
+      const pid = participant.id;
+      if (!pid) throw new Error('Could not determine participant ID — please try again.');
+      // Delete existing picks for this participant then re-insert fresh
+      await sb(`brackets?participant_id=eq.${pid}`, { method: 'DELETE' });
       await sbPost('brackets', bracketRows);
     }
 
