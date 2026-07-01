@@ -1426,8 +1426,8 @@ function confirmRemoveParticipant(id, name) {
 
 async function removeParticipant(id, name) {
   try {
-    // Brackets cascade-delete via FK, so just delete participant
-    await sb(`participants?id=eq.${id}`, { method: 'DELETE', headers: { 'Prefer': '' } });
+    await sb(`brackets?participant_id=eq.${id}`, { method: 'DELETE' });
+    await sb(`participants?id=eq.${id}`, { method: 'DELETE' });
     toast(`${name} removed`);
     loadAdminParticipants();
   } catch(e) {
