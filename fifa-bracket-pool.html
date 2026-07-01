@@ -434,6 +434,10 @@
         <label>Email Address</label>
         <input type="email" id="reg-email" placeholder="you@email.com">
       </div>
+      <div class="form-group">
+        <label>Bracket Name <span style="color:var(--muted);font-weight:400">(optional — e.g. "My Bracket #2")</span></label>
+        <input type="text" id="reg-bracket-name" placeholder="Leave blank for default">
+      </div>
     </div>
 
     <div id="bracket-picker">
@@ -454,12 +458,15 @@
     <div class="card" style="text-align:center;">
       <div style="font-size:2rem;margin-bottom:8px;">✅</div>
       <h2 style="text-align:center;">You're in!</h2>
-      <p style="color:var(--muted);font-size:0.88rem;margin-top:4px;">
+      <p style="color:var(--muted);font-size:0.88rem;margin-top:4px;" id="already-entered-msg">
         Your bracket has been saved. Head to <strong style="color:var(--text)">Leaderboard</strong> to see standings
         or <strong style="color:var(--text)">My Bracket</strong> to review your picks.
       </p>
-      <button class="btn btn-primary" style="margin-top:16px;" onclick="switchTab('leaderboard')">View Leaderboard</button>
-      <button class="btn" style="margin-top:8px;background:var(--border);color:var(--text);" onclick="showReenter()">Change My Picks</button>
+      <div style="display:flex;flex-wrap:wrap;gap:10px;justify-content:center;margin-top:16px;">
+        <button class="btn btn-primary" onclick="switchTab('leaderboard')">View Leaderboard</button>
+        <button class="btn" style="background:var(--border);color:var(--text);" onclick="showReenter()">Update This Bracket</button>
+        <button class="btn btn-gold" onclick="startNewBracket()">+ Add Another Bracket</button>
+      </div>
     </div>
   </div>
 
@@ -698,6 +705,7 @@ function allMatches() {
 }
 let picks = {};          // { match_id: team_name }
 let currentEmail = localStorage.getItem('bracket_email') || '';
+let currentParticipantId = null;  // tracks which bracket row we're editing
 let isLocked = new Date() >= BRACKET_LOCK_DATE;
 let adminAuthed = false;
 
@@ -886,17 +894,40 @@ function renderChampionBanner() {
 }
 
 // ══════════════════════════════════════════════════════
+// GOOGLE SHEETS WEBHOOK
+// Paste your Apps Script Web App URL here after setup
+// ══════════════════════════════════════════════════════
+const SHEETS_WEBHOOK_URL = ''; // <-- filled in after Apps Script setup
+
+async function notifySheet(name, email, bracketName) {
+  if (!SHEETS_WEBHOOK_URL) return;
+  try {
+    await fetch(SHEETS_WEBHOOK_URL, {
+      method: 'POST',
+      mode: 'no-cors',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name, email, bracketName, timestamp: new Date().toISOString() })
+    });
+  } catch(e) { /* silent — sheet sync is best-effort */ }
+}
+
+// ══════════════════════════════════════════════════════
 // SUBMIT BRACKET
 // ══════════════════════════════════════════════════════
 async function submitBracket() {
-  const name = document.getElementById('reg-name').value.trim();
+  const name  = document.getElementById('reg-name').value.trim();
   const email = document.getElementById('reg-email').value.trim().toLowerCase();
+  const bracketNameInput = document.getElementById('reg-bracket-name').value.trim();
+  const bracketName = bracketNameInput || null;
 
-  if (!name) { toast('Please enter your name', true); return; }
+  if (!name)  { toast('Please enter your name', true); return; }
   if (!email || !email.includes('@')) { toast('Please enter a valid email', true); return; }
 
   // Validate all R16 picks with known teams
-  const knownR16 = MATCHES.r16.filter(m => !m.team1.startsWith('TBD') && !m.team1.startsWith('W ') && !m.team2.startsWith('TBD'));
+  const knownR16 = MATCHES.r16.filter(m =>
+    !m.team1.startsWith('TBD') && !m.team1.startsWith('W ') &&
+    !m.team2.startsWith('TBD') && !m.team2.startsWith('W ')
+  );
   for (const m of knownR16) {
     if (!picks[m.id]) {
       toast(`Please pick a winner for ${m.team1} vs ${m.team2}`, true);
@@ -909,23 +940,37 @@ async function submitBracket() {
   btn.textContent = 'Saving...';
 
   try {
-    // Upsert participant
-    let participants = await sbGet('participants', `email=eq.${encodeURIComponent(email)}`);
     let participant;
-    if (participants.length === 0) {
-      const created = await sbPost('participants', { name, email });
-      participant = created[0];
+
+    if (currentParticipantId) {
+      // Updating an existing bracket — patch name if changed
+      await sbPatch('participants', `id=eq.${currentParticipantId}`, { name });
+      participant = { id: currentParticipantId };
     } else {
-      participant = participants[0];
-      // Update name if changed
-      await sbPatch('participants', `email=eq.${encodeURIComponent(email)}`, { name });
+      // Check if this exact (email, bracket_name) combo already exists
+      const query = bracketName
+        ? `email=eq.${encodeURIComponent(email)}&bracket_name=eq.${encodeURIComponent(bracketName)}`
+        : `email=eq.${encodeURIComponent(email)}&bracket_name=is.null`;
+      const existing = await sbGet('participants', query);
+
+      if (existing.length > 0) {
+        participant = existing[0];
+        await sbPatch('participants', `id=eq.${participant.id}`, { name });
+      } else {
+        const created = await sbPost('participants', { name, email, bracket_name: bracketName });
+        participant = created[0];
+        // Notify Google Sheet of new signup
+        await notifySheet(name, email, bracketName || 'Default');
+      }
     }
 
     // Save all picks (upsert)
-    const bracketRows = Object.entries(picks).map(([match_id, picked_team]) => {
-      const round = match_id.split('_')[0];
-      return { participant_id: participant.id, round, match_id, picked_team };
-    });
+    const bracketRows = Object.entries(picks).map(([match_id, picked_team]) => ({
+      participant_id: participant.id,
+      round: match_id.split('_')[0],
+      match_id,
+      picked_team
+    }));
 
     if (bracketRows.length > 0) {
       await sbUpsert('brackets', bracketRows);
@@ -934,8 +979,13 @@ async function submitBracket() {
     localStorage.setItem('bracket_email', email);
     localStorage.setItem('bracket_name', name);
     currentEmail = email;
+    currentParticipantId = participant.id;
 
-    toast('Bracket saved! Good luck! 🏆');
+    const label = bracketName ? ` (${bracketName})` : '';
+    toast(`Bracket${label} saved! Good luck! 🏆`);
+
+    document.getElementById('already-entered-msg').innerHTML =
+      `Your bracket${label} has been saved. Head to <strong style="color:var(--text)">Leaderboard</strong> to see standings or add another bracket below.`;
     document.getElementById('enter-form-section').style.display = 'none';
     document.getElementById('already-entered').style.display = 'block';
 
@@ -950,8 +1000,9 @@ async function submitBracket() {
 async function checkAlreadyEntered() {
   if (!currentEmail) return;
   try {
-    const p = await sbGet('participants', `email=eq.${encodeURIComponent(currentEmail)}`);
+    const p = await sbGet('participants', `email=eq.${encodeURIComponent(currentEmail)}&order=created_at.asc&limit=1`);
     if (p.length > 0) {
+      currentParticipantId = p[0].id;
       document.getElementById('enter-form-section').style.display = 'none';
       document.getElementById('already-entered').style.display = 'block';
       document.getElementById('reg-name').value = localStorage.getItem('bracket_name') || '';
@@ -965,16 +1016,47 @@ function showReenter() {
   document.getElementById('already-entered').style.display = 'none';
   document.getElementById('reg-name').value = localStorage.getItem('bracket_name') || '';
   document.getElementById('reg-email').value = currentEmail;
-  // Load existing picks
   loadExistingPicks();
+}
+
+function startNewBracket() {
+  // Reset picks and form for a fresh bracket entry
+  picks = {};
+  currentParticipantId = null;
+  document.getElementById('enter-form-section').style.display = 'block';
+  document.getElementById('already-entered').style.display = 'none';
+  document.getElementById('reg-name').value = localStorage.getItem('bracket_name') || '';
+  document.getElementById('reg-email').value = currentEmail;
+  document.getElementById('reg-bracket-name').value = '';
+
+  // Reset MATCHES QF/SF/Final back to placeholders for fresh pick
+  MATCHES.qf.forEach((m,i) => {
+    m.team1 = `W R16-${i*2+1}`; m.flag1 = '🏳️';
+    m.team2 = `W R16-${i*2+2}`; m.flag2 = '🏳️';
+  });
+  MATCHES.sf.forEach((m,i) => {
+    m.team1 = `W QF-${i*2+1}`; m.flag1 = '🏳️';
+    m.team2 = `W QF-${i*2+2}`; m.flag2 = '🏳️';
+  });
+  MATCHES.final[0].team1 = 'W SF-1'; MATCHES.final[0].flag1 = '🏳️';
+  MATCHES.final[0].team2 = 'W SF-2'; MATCHES.final[0].flag2 = '🏳️';
+
+  renderBracketPicker();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
 async function loadExistingPicks() {
   if (!currentEmail) return;
   try {
-    const p = await sbGet('participants', `email=eq.${encodeURIComponent(currentEmail)}`);
+    const query = currentParticipantId
+      ? `id=eq.${currentParticipantId}`
+      : `email=eq.${encodeURIComponent(currentEmail)}&order=created_at.asc&limit=1`;
+    const p = await sbGet('participants', query);
     if (!p.length) return;
+    currentParticipantId = p[0].id;
+    if (p[0].bracket_name) document.getElementById('reg-bracket-name').value = p[0].bracket_name;
     const b = await sbGet('brackets', `participant_id=eq.${p[0].id}`);
+    picks = {};
     b.forEach(row => { picks[row.match_id] = row.picked_team; });
     renderBracketPicker();
   } catch(e) {}
@@ -1056,7 +1138,6 @@ async function loadLeaderboard() {
             <th>Name</th>
             <th>Score</th>
             <th>Correct</th>
-            <th>Status</th>
           </tr>
         </thead>
         <tbody>
@@ -1066,11 +1147,12 @@ async function loadLeaderboard() {
       const rankClass = i===0?'top1':i===1?'top2':i===2?'top3':'';
       const rankIcon = i===0?'🥇':i===1?'🥈':i===2?'🥉':i+1;
       const isMe = p.email === currentEmail;
+      const displayName = p.bracket_name ? `${p.name} <span style="color:var(--muted);font-size:0.75rem">(${p.bracket_name})</span>` : p.name;
       html += `
         <tr style="${isMe?'background:rgba(200,168,75,0.07);':''}">
           <td class="rank ${rankClass}">${rankIcon}</td>
           <td>
-            <div style="font-weight:${isMe?'700':'400'}">${p.name}${isMe?' <span style="color:var(--gold);font-size:0.75rem">(you)</span>':''}</div>
+            <div style="font-weight:${isMe?'700':'400'}">${displayName}${isMe?' <span style="color:var(--gold);font-size:0.75rem">(you)</span>':''}</div>
             <button class="btn btn-sm" style="background:transparent;border:1px solid var(--border);color:var(--muted);margin-top:4px;"
               onclick="toggleBracketDetail('detail-${p.id}')">View Picks ▾</button>
             <div id="detail-${p.id}" class="bracket-detail">
@@ -1079,7 +1161,6 @@ async function loadLeaderboard() {
           </td>
           <td><span class="score-badge">${p.score} pts</span></td>
           <td style="color:var(--muted)">${p.correct}/${p.total}</td>
-          <td>${p.paid?'<span class="paid-badge">Paid ✓</span>':'<span class="unpaid-badge">Unpaid</span>'}</td>
         </tr>
       `;
     });
