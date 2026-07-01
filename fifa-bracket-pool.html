@@ -6,19 +6,22 @@
 <title>FIFA World Cup 2026 — Bracket Pool</title>
 <style>
   :root {
-    --green: #1a7a3c;
-    --gold: #c8a84b;
-    --dark: #0d1f12;
-    --card: #1a2e1e;
-    --border: #2d4a32;
-    --text: #e8f0ea;
-    --muted: #7a9e80;
-    --red: #c0392b;
-    --blue: #1a5276;
+    --accent: #cc0000;
+    --accent-hover: #e60000;
+    --dark: #1a1a1a;
+    --card: #ffffff;
+    --border: #e0e0e0;
+    --text: #1a1a1a;
+    --muted: #757575;
+    --bg: #f0f0f0;
+    --nav: #1a1a1a;
+    --red: #cc0000;
+    --green: #2e7d32;
+    --gold: #cc0000;
   }
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body {
-    background: var(--dark);
+    background: var(--bg);
     color: var(--text);
     font-family: 'Segoe UI', system-ui, sans-serif;
     min-height: 100vh;
@@ -26,8 +29,8 @@
 
   /* ── Header ── */
   header {
-    background: linear-gradient(135deg, #0d3320 0%, #1a5c2e 50%, #0d3320 100%);
-    border-bottom: 2px solid var(--gold);
+    background: var(--nav);
+    border-bottom: 3px solid var(--accent);
     padding: 20px 24px;
     text-align: center;
     position: relative;
@@ -38,7 +41,7 @@
     letter-spacing: 1px;
     color: #fff;
   }
-  header h1 span { color: var(--gold); }
+  header h1 span { color: var(--accent); }
   header h1 button {
     background: none;
     border: none;
@@ -49,25 +52,25 @@
     padding: 0;
   }
   header h1 button:hover { opacity: 0.85; }
-  header p { color: var(--muted); font-size: 0.85rem; margin-top: 4px; }
+  header p { color: #aaa; font-size: 0.85rem; margin-top: 4px; }
   .trophy { font-size: 2rem; display: block; margin-bottom: 6px; }
   .fundraiser-note {
-    background: rgba(200, 168, 75, 0.15);
-    border: 1px solid var(--gold);
+    background: rgba(204,0,0,0.12);
+    border: 1px solid var(--accent);
     border-radius: 8px;
     padding: 8px 16px;
     margin-top: 12px;
     font-size: 0.82rem;
-    color: var(--gold);
+    color: #ff6b6b;
     display: inline-block;
   }
-  .fundraiser-note a { color: var(--gold); }
+  .fundraiser-note a { color: #ff6b6b; }
 
   /* ── Nav ── */
   nav {
     display: flex;
-    background: #0d1f12;
-    border-bottom: 1px solid var(--border);
+    background: var(--nav);
+    border-bottom: 1px solid #333;
     overflow-x: auto;
   }
   nav button {
@@ -76,7 +79,7 @@
     padding: 14px 16px;
     background: none;
     border: none;
-    color: var(--muted);
+    color: #aaa;
     font-size: 0.88rem;
     font-weight: 600;
     cursor: pointer;
@@ -85,11 +88,10 @@
     white-space: nowrap;
   }
   nav button.active {
-    color: var(--gold);
-    border-bottom-color: var(--gold);
-    background: rgba(200,168,75,0.06);
+    color: #fff;
+    border-bottom-color: var(--accent);
   }
-  nav button:hover:not(.active) { color: var(--text); }
+  nav button:hover:not(.active) { color: #fff; }
 
   /* ── Main container ── */
   .page { display: none; padding: 24px 16px; max-width: 1060px; margin: 0 auto; }
@@ -99,11 +101,12 @@
   .card {
     background: var(--card);
     border: 1px solid var(--border);
-    border-radius: 12px;
+    border-radius: 8px;
     padding: 20px;
     margin-bottom: 16px;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.08);
   }
-  .card h2 { font-size: 1.1rem; color: var(--gold); margin-bottom: 16px; }
+  .card h2 { font-size: 1.1rem; color: var(--text); margin-bottom: 16px; font-weight: 700; }
   .card h3 { font-size: 0.95rem; color: var(--muted); margin-bottom: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
 
   /* ── Forms ── */
@@ -111,28 +114,28 @@
   label { display: block; font-size: 0.82rem; color: var(--muted); margin-bottom: 5px; font-weight: 600; }
   input[type=text], input[type=email], input[type=password] {
     width: 100%;
-    background: #0d1f12;
+    background: #fff;
     border: 1px solid var(--border);
-    border-radius: 8px;
+    border-radius: 6px;
     padding: 10px 14px;
     color: var(--text);
     font-size: 0.95rem;
   }
-  input:focus { outline: none; border-color: var(--gold); }
+  input:focus { outline: none; border-color: var(--accent); }
 
   .btn {
     padding: 11px 24px;
-    border-radius: 8px;
+    border-radius: 6px;
     border: none;
     font-weight: 700;
     font-size: 0.9rem;
     cursor: pointer;
     transition: all 0.2s;
   }
-  .btn-primary { background: var(--green); color: #fff; }
-  .btn-primary:hover { background: #218a45; }
-  .btn-gold { background: var(--gold); color: #0d1f12; }
-  .btn-gold:hover { background: #d4b05a; }
+  .btn-primary { background: var(--accent); color: #fff; }
+  .btn-primary:hover { background: var(--accent-hover); }
+  .btn-gold { background: var(--dark); color: #fff; }
+  .btn-gold:hover { background: #333; }
   .btn-sm { padding: 6px 14px; font-size: 0.8rem; }
   .btn:disabled { opacity: 0.4; cursor: not-allowed; }
 
@@ -168,10 +171,10 @@
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.8px;
-    color: var(--gold);
-    border-bottom: 2px solid var(--gold);
+    color: var(--text);
+    border-bottom: 2px solid var(--accent);
     margin-bottom: 0;
-    background: rgba(200,168,75,0.06);
+    background: #f8f8f8;
     white-space: nowrap;
   }
   .bracket-round-header span {
@@ -202,10 +205,11 @@
   .bracket-match {
     flex: 1;
     margin: 4px 6px;
-    border-radius: 8px;
+    border-radius: 6px;
     overflow: hidden;
     border: 1px solid var(--border);
-    background: #0d1f12;
+    background: #fff;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
     min-width: 0;
     position: relative;
     z-index: 1;
@@ -264,10 +268,10 @@
     align-items: center;
     gap: 7px;
     width: 100%;
-    padding: 9px 10px;
+    padding: 8px 10px;
     background: none;
     border: none;
-    border-bottom: 1px solid rgba(45,74,50,0.4);
+    border-bottom: 1px solid #f0f0f0;
     color: var(--text);
     cursor: pointer;
     text-align: left;
@@ -278,14 +282,14 @@
     text-overflow: ellipsis;
   }
   .team-btn:last-child { border-bottom: none; }
-  .team-btn:hover:not(.tbd) { background: rgba(255,255,255,0.05); }
+  .team-btn:hover:not(.tbd) { background: #f5f5f5; }
   .team-btn.selected {
-    background: var(--green);
+    background: #cc0000;
     color: #fff;
     font-weight: 700;
   }
   .team-btn.tbd {
-    color: var(--muted);
+    color: #aaa;
     font-style: italic;
     cursor: default;
   }
@@ -294,11 +298,12 @@
     font-size: 0.62rem;
     color: var(--muted);
     padding: 3px 8px;
-    background: rgba(0,0,0,0.25);
-    border-bottom: 1px solid rgba(45,74,50,0.3);
+    background: #f8f8f8;
+    border-bottom: 1px solid #eee;
     text-align: center;
   }
-  .flag { font-size: 1rem; flex-shrink: 0; }
+  .flag { font-size: 1rem; flex-shrink: 0; line-height: 1; }
+  .flag img { width: 20px; height: 14px; object-fit: cover; border-radius: 2px; display: block; }
 
   /* For the Final column - center the single match vertically */
   .bracket-round.final-round .bracket-slots {
@@ -309,36 +314,36 @@
     text-align: center;
     margin-top: 8px;
     padding: 10px;
-    background: linear-gradient(135deg, rgba(200,168,75,0.18), rgba(200,168,75,0.06));
-    border: 1px solid var(--gold);
-    border-radius: 8px;
+    background: linear-gradient(135deg, rgba(204,0,0,0.1), rgba(204,0,0,0.04));
+    border: 1px solid var(--accent);
+    border-radius: 6px;
     font-size: 0.72rem;
     color: var(--muted);
     text-transform: uppercase;
     letter-spacing: 1px;
-    animation: pulse-gold 2s ease-in-out infinite;
+    animation: pulse-red 2s ease-in-out infinite;
   }
   .champion-display .champion-name {
     font-size: 1.1rem;
     font-weight: 800;
-    color: var(--gold);
+    color: var(--accent);
     display: block;
     margin-top: 3px;
   }
 
   /* Read-only pick display (My Bracket / leaderboard view) */
-  .team-btn.pick-correct { background: rgba(26,122,60,0.25); color: #5dba7d; font-weight: 700; }
-  .team-btn.pick-wrong   { background: rgba(192,57,43,0.2);  color: #e07060; }
-  .team-btn.pick-pending { background: rgba(200,168,75,0.12); color: var(--gold); font-weight: 600; }
+  .team-btn.pick-correct { background: rgba(46,125,50,0.15); color: #2e7d32; font-weight: 700; }
+  .team-btn.pick-wrong   { background: rgba(204,0,0,0.1);   color: #cc0000; }
+  .team-btn.pick-pending { background: rgba(0,0,0,0.05); color: var(--text); font-weight: 600; }
 
   /* ── Locked state ── */
   .locked-banner {
-    background: rgba(192,57,43,0.15);
-    border: 1px solid var(--red);
-    border-radius: 8px;
+    background: rgba(204,0,0,0.08);
+    border: 1px solid var(--accent);
+    border-radius: 6px;
     padding: 10px 16px;
     text-align: center;
-    color: #e74c3c;
+    color: var(--accent);
     font-size: 0.85rem;
     font-weight: 600;
     margin-bottom: 16px;
@@ -357,20 +362,20 @@
     font-size: 0.75rem;
     text-transform: uppercase;
     letter-spacing: 0.5px;
-    border-bottom: 1px solid var(--border);
+    border-bottom: 2px solid var(--border);
   }
   .leaderboard-table td {
     padding: 12px;
-    border-bottom: 1px solid rgba(45,74,50,0.5);
+    border-bottom: 1px solid var(--border);
   }
   .leaderboard-table tr:last-child td { border-bottom: none; }
-  .leaderboard-table tr:hover td { background: rgba(255,255,255,0.03); }
+  .leaderboard-table tr:hover td { background: #f9f9f9; }
   .rank { font-weight: 800; color: var(--muted); width: 36px; }
-  .rank.top1 { color: var(--gold); }
-  .rank.top2 { color: #aaa; }
-  .rank.top3 { color: #cd7f32; }
+  .rank.top1 { color: #c9a84c; }
+  .rank.top2 { color: #888; }
+  .rank.top3 { color: #a0522d; }
   .score-badge {
-    background: var(--green);
+    background: var(--accent);
     color: #fff;
     padding: 3px 10px;
     border-radius: 12px;
@@ -378,25 +383,25 @@
     font-size: 0.82rem;
   }
   .paid-badge {
-    background: rgba(26,122,60,0.3);
-    border: 1px solid var(--green);
-    color: #5dba7d;
+    background: rgba(46,125,50,0.1);
+    border: 1px solid #2e7d32;
+    color: #2e7d32;
     padding: 2px 8px;
     border-radius: 10px;
     font-size: 0.72rem;
     font-weight: 600;
   }
   .unpaid-badge {
-    background: rgba(192,57,43,0.2);
-    border: 1px solid #8e2018;
-    color: #e07060;
+    background: rgba(204,0,0,0.08);
+    border: 1px solid #cc0000;
+    color: #cc0000;
     padding: 2px 8px;
     border-radius: 10px;
     font-size: 0.72rem;
     font-weight: 600;
   }
-  .correct { color: #5dba7d; }
-  .wrong { color: #e07060; }
+  .correct { color: #2e7d32; }
+  .wrong { color: #cc0000; }
 
   /* ── Bracket view ── */
   .bracket-detail {
@@ -420,14 +425,14 @@
     align-items: center;
     justify-content: space-between;
     padding: 10px 0;
-    border-bottom: 1px solid rgba(45,74,50,0.4);
+    border-bottom: 1px solid var(--border);
     font-size: 0.85rem;
     gap: 12px;
   }
   .admin-match:last-child { border-bottom: none; }
   .admin-match .teams { flex: 1; }
   .admin-match select {
-    background: #0d1f12;
+    background: #fff;
     border: 1px solid var(--border);
     border-radius: 6px;
     padding: 6px 10px;
@@ -435,22 +440,23 @@
     font-size: 0.83rem;
     min-width: 160px;
   }
-  .admin-match select:focus { outline: none; border-color: var(--gold); }
-  .result-set { color: #5dba7d; font-size: 0.78rem; font-weight: 600; }
+  .admin-match select:focus { outline: none; border-color: var(--accent); }
+  .result-set { color: #2e7d32; font-size: 0.78rem; font-weight: 600; }
 
   /* ── Prize pool ── */
   .prize-box {
-    background: linear-gradient(135deg, rgba(200,168,75,0.1), rgba(200,168,75,0.05));
-    border: 1px solid var(--gold);
-    border-radius: 10px;
+    background: #fff;
+    border: 1px solid var(--border);
+    border-radius: 8px;
     padding: 16px;
     text-align: center;
     margin-bottom: 16px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.08);
   }
-  .prize-amount { font-size: 2rem; font-weight: 800; color: var(--gold); }
+  .prize-amount { font-size: 2rem; font-weight: 800; color: var(--accent); }
   .prize-label { font-size: 0.8rem; color: var(--muted); margin-top: 2px; }
   .prize-split { display: flex; gap: 12px; margin-top: 12px; }
-  .prize-split-item { flex: 1; background: rgba(0,0,0,0.2); border-radius: 8px; padding: 10px; text-align: center; }
+  .prize-split-item { flex: 1; background: #f8f8f8; border-radius: 6px; padding: 10px; text-align: center; }
   .prize-split-item .amt { font-size: 1.2rem; font-weight: 700; color: var(--text); }
   .prize-split-item .lbl { font-size: 0.72rem; color: var(--muted); }
 
@@ -462,13 +468,13 @@
     margin-bottom: 16px;
   }
   .scoring-key-item {
-    background: rgba(0,0,0,0.3);
+    background: #f8f8f8;
     border: 1px solid var(--border);
-    border-radius: 8px;
+    border-radius: 6px;
     padding: 8px 14px;
     text-align: center;
   }
-  .scoring-key-item .pts { font-size: 1.1rem; font-weight: 800; color: var(--gold); }
+  .scoring-key-item .pts { font-size: 1.1rem; font-weight: 800; color: var(--accent); }
   .scoring-key-item .rnd { font-size: 0.72rem; color: var(--muted); }
 
   /* ── Toast ── */
@@ -477,11 +483,11 @@
     bottom: 24px;
     left: 50%;
     transform: translateX(-50%) translateY(60px);
-    background: #1e3d28;
-    border: 1px solid var(--green);
-    color: var(--text);
+    background: #1a1a1a;
+    border: 1px solid #444;
+    color: #fff;
     padding: 12px 24px;
-    border-radius: 10px;
+    border-radius: 6px;
     font-size: 0.88rem;
     font-weight: 600;
     transition: transform 0.3s;
@@ -489,7 +495,7 @@
     white-space: nowrap;
   }
   #toast.show { transform: translateX(-50%) translateY(0); }
-  #toast.error { background: #3d1e1e; border-color: var(--red); }
+  #toast.error { background: #cc0000; border-color: #aa0000; }
 
   /* ── Loading ── */
   .loading { text-align: center; padding: 40px; color: var(--muted); }
@@ -497,15 +503,15 @@
     display: inline-block;
     width: 28px; height: 28px;
     border: 3px solid var(--border);
-    border-top-color: var(--gold);
+    border-top-color: var(--accent);
     border-radius: 50%;
     animation: spin 0.8s linear infinite;
     margin-bottom: 10px;
   }
   @keyframes spin { to { transform: rotate(360deg); } }
-  @keyframes pulse-gold {
-    0%, 100% { box-shadow: 0 0 0 0 rgba(200,168,75,0); }
-    50% { box-shadow: 0 0 16px 4px rgba(200,168,75,0.25); }
+  @keyframes pulse-red {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(204,0,0,0); }
+    50% { box-shadow: 0 0 16px 4px rgba(204,0,0,0.2); }
   }
 
   .empty-state { text-align: center; padding: 40px; color: var(--muted); font-size: 0.9rem; }
@@ -788,17 +794,24 @@ const ROUND_LABELS = {
   final: { label: 'Final',         pts: 8 },
 };
 
+// ISO 3166-1 alpha-2 codes for flagcdn.com
 const FLAGS = {
-  'Paraguay':'🇵🇾','Canada':'🇨🇦','Morocco':'🇲🇦','Brazil':'🇧🇷','Norway':'🇳🇴',
-  'France':'🇫🇷','Germany':'🇩🇪','Spain':'🇪🇸','Argentina':'🇦🇷','England':'🏴󠁧󠁢󠁥󠁮󠁧󠁿',
-  'Portugal':'🇵🇹','Belgium':'🇧🇪','Netherlands':'🇳🇱','United States':'🇺🇸','USA':'🇺🇸',
-  'Mexico':'🇲🇽','Japan':'🇯🇵','South Korea':'🇰🇷','Australia':'🇦🇺','Switzerland':'🇨🇭',
-  'Colombia':'🇨🇴','Uruguay':'🇺🇾','Croatia':'🇭🇷','Senegal':'🇸🇳','Austria':'🇦🇹',
-  'Algeria':'🇩🇿','Ecuador':'🇪🇨','Ghana':'🇬🇭','Egypt':'🇪🇬','Cape Verde':'🇨🇻',
-  'Congo DR':'🇨🇩','Bosnia-Herzegovina':'🇧🇦','Sweden':'🇸🇪','Ivory Coast':'🇨🇮',
-  'South Africa':'🇿🇦','Japan':'🇯🇵','Saudi Arabia':'🇸🇦','Tunisia':'🇹🇳','Iran':'🇮🇷',
-  'Scotland':'🏴󠁧󠁢󠁳󠁣󠁴󠁿','Wales':'🏴󠁧󠁢󠁷󠁬󠁳󠁿','Turkey':'🇹🇷','Serbia':'🇷🇸','Denmark':'🇩🇰',
+  'Paraguay':'py','Canada':'ca','Morocco':'ma','Brazil':'br','Norway':'no',
+  'France':'fr','Germany':'de','Spain':'es','Argentina':'ar','England':'gb-eng',
+  'Portugal':'pt','Belgium':'be','Netherlands':'nl','United States':'us','USA':'us',
+  'Mexico':'mx','Japan':'jp','South Korea':'kr','Australia':'au','Switzerland':'ch',
+  'Colombia':'co','Uruguay':'uy','Croatia':'hr','Senegal':'sn','Austria':'at',
+  'Algeria':'dz','Ecuador':'ec','Ghana':'gh','Egypt':'eg','Cape Verde':'cv',
+  'Congo DR':'cd','Bosnia-Herzegovina':'ba','Bosnia-Herz':'ba','Sweden':'se',
+  'Ivory Coast':'ci','South Africa':'za','Saudi Arabia':'sa','Tunisia':'tn',
+  'Scotland':'gb-sct','Wales':'gb-wls','Turkey':'tr','Serbia':'rs','Denmark':'dk',
 };
+
+function flagImg(team) {
+  const code = FLAGS[team];
+  if (!code) return '<span class="flag">🏳️</span>';
+  return `<span class="flag"><img src="https://flagcdn.com/20x15/${code}.png" alt="${team}" width="20" height="15"></span>`;
+}
 
 // ══════════════════════════════════════════════════════
 // SUPABASE HELPERS
@@ -1035,8 +1048,6 @@ function buildMatchCard(m, interactive, readOnly, picksObj, resultMap) {
   // picksObj / resultMap used for read-only display (My Bracket, leaderboard)
   const isTbd1 = !m.team1 || m.team1.startsWith('TBD') || m.team1.startsWith('W ');
   const isTbd2 = !m.team2 || m.team2.startsWith('TBD') || m.team2.startsWith('W ');
-  const f1 = FLAGS[m.team1] || m.flag1 || '🏳️';
-  const f2 = FLAGS[m.team2] || m.flag2 || '🏳️';
   const disp1 = isTbd1 ? (m.team1 ? m.team1.replace(/^W /, '') : 'TBD') : m.team1;
   const disp2 = isTbd2 ? (m.team2 ? m.team2.replace(/^W /, '') : 'TBD') : m.team2;
 
@@ -1082,13 +1093,13 @@ function buildMatchCard(m, interactive, readOnly, picksObj, resultMap) {
   btn1.className = teamClass(m.team1, isTbd1, 1);
   btn1.id = `btn-${m.id}-1`;
   btn1.onclick = clickFn1;
-  btn1.innerHTML = `<span class="flag">${f1}</span><span style="overflow:hidden;text-overflow:ellipsis">${disp1}${statusIcon(m.team1, isTbd1)}</span>`;
+  btn1.innerHTML = `${isTbd1 ? '<span class="flag">🏳️</span>' : flagImg(m.team1)}<span style="overflow:hidden;text-overflow:ellipsis">${disp1}${statusIcon(m.team1, isTbd1)}</span>`;
 
   const btn2 = document.createElement('button');
   btn2.className = teamClass(m.team2, isTbd2, 2);
   btn2.id = `btn-${m.id}-2`;
   btn2.onclick = clickFn2;
-  btn2.innerHTML = `<span class="flag">${f2}</span><span style="overflow:hidden;text-overflow:ellipsis">${disp2}${statusIcon(m.team2, isTbd2)}</span>`;
+  btn2.innerHTML = `${isTbd2 ? '<span class="flag">🏳️</span>' : flagImg(m.team2)}<span style="overflow:hidden;text-overflow:ellipsis">${disp2}${statusIcon(m.team2, isTbd2)}</span>`;
 
   card.appendChild(btn1);
   card.appendChild(btn2);
@@ -1852,7 +1863,7 @@ async function loadAdminResults() {
         const isTbd = m.team1.startsWith('TBD') || m.team1.startsWith('W ');
         html += `
           <div class="admin-match">
-            <div class="teams">${m.flag1||FLAGS[m.team1]||'🏳️'} ${m.team1} vs ${m.flag2||FLAGS[m.team2]||'🏳️'} ${m.team2}<br>
+            <div class="teams">${m.team1} vs ${m.team2}<br>
               <span style="font-size:0.72rem;color:var(--muted)">${m.date}</span>
             </div>
             <select id="result-${m.id}" ${isTbd?'disabled':''}>
@@ -2111,8 +2122,6 @@ function renderAdminBracketPicker() {
 function buildAdminMatchCard(m) {
   const isTbd1 = !m.team1 || m.team1.startsWith('TBD') || m.team1.startsWith('W ');
   const isTbd2 = !m.team2 || m.team2.startsWith('TBD') || m.team2.startsWith('W ');
-  const f1 = FLAGS[m.team1] || m.flag1 || '🏳️';
-  const f2 = FLAGS[m.team2] || m.flag2 || '🏳️';
   const disp1 = isTbd1 ? (m.team1 ? m.team1.replace(/^W /, '') : 'TBD') : m.team1;
   const disp2 = isTbd2 ? (m.team2 ? m.team2.replace(/^W /, '') : 'TBD') : m.team2;
 
@@ -2125,13 +2134,13 @@ function buildAdminMatchCard(m) {
   btn1.className = `team-btn${isTbd1?' tbd':''}${(!isTbd1 && adminEditPicks_picks[m.id]===m.team1)?' selected':''}`;
   btn1.id = `admin-btn-${m.id}-1`;
   btn1.onclick = isTbd1 ? null : () => adminPickTeam(m.id, 1);
-  btn1.innerHTML = `<span class="flag">${f1}</span><span style="overflow:hidden;text-overflow:ellipsis">${disp1}</span>`;
+  btn1.innerHTML = `${isTbd1 ? '<span class="flag">🏳️</span>' : flagImg(m.team1)}<span style="overflow:hidden;text-overflow:ellipsis">${disp1}</span>`;
 
   const btn2 = document.createElement('button');
   btn2.className = `team-btn${isTbd2?' tbd':''}${(!isTbd2 && adminEditPicks_picks[m.id]===m.team2)?' selected':''}`;
   btn2.id = `admin-btn-${m.id}-2`;
   btn2.onclick = isTbd2 ? null : () => adminPickTeam(m.id, 2);
-  btn2.innerHTML = `<span class="flag">${f2}</span><span style="overflow:hidden;text-overflow:ellipsis">${disp2}</span>`;
+  btn2.innerHTML = `${isTbd2 ? '<span class="flag">🏳️</span>' : flagImg(m.team2)}<span style="overflow:hidden;text-overflow:ellipsis">${disp2}</span>`;
 
   card.appendChild(btn1);
   card.appendChild(btn2);
