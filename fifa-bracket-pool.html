@@ -480,9 +480,10 @@
       </p>
       <div style="display:flex;flex-wrap:wrap;gap:10px;justify-content:center;margin-top:16px;">
         <button class="btn btn-primary" onclick="switchTab('leaderboard')">View Leaderboard</button>
-        <button class="btn" style="background:var(--border);color:var(--text);" onclick="showReenter()">Update This Bracket</button>
+        <button class="btn" id="update-bracket-btn" style="background:var(--border);color:var(--text);" onclick="showReenter()">Update This Bracket</button>
         <button class="btn btn-gold" onclick="startNewBracket()">+ Add Another Bracket</button>
       </div>
+      <div id="bracket-selector" style="display:none;margin-top:14px;"></div>
     </div>
   </div>
 
@@ -1032,18 +1033,49 @@ async function submitBracket() {
 async function checkAlreadyEntered() {
   if (!currentEmail) return;
   try {
-    const p = await sbGet('participants', `email=eq.${encodeURIComponent(currentEmail)}&order=created_at.asc&limit=1`);
+    const p = await sbGet('participants', `email=eq.${encodeURIComponent(currentEmail)}&order=created_at.asc`);
     if (p.length > 0) {
       currentParticipantId = p[0].id;
       document.getElementById('enter-form-section').style.display = 'none';
       document.getElementById('already-entered').style.display = 'block';
       document.getElementById('reg-name').value = localStorage.getItem('bracket_name') || '';
       document.getElementById('reg-email').value = currentEmail;
+
+      // Build bracket selector if multiple brackets
+      const selectorEl = document.getElementById('bracket-selector');
+      if (p.length > 1) {
+        let html = `<p style="font-size:0.85rem;color:var(--muted);margin-bottom:10px;">You have ${p.length} brackets. Choose one to update:</p>`;
+        p.forEach(b => {
+          html += `<button class="btn btn-sm" style="background:var(--border);color:var(--text);margin:4px;"
+            onclick="showReenterById('${b.id}', '${(b.bracket_name||'').replace(/'/g,"\\'")}')">
+            ✏️ ${b.bracket_name || b.name}
+          </button>`;
+        });
+        selectorEl.innerHTML = html;
+        selectorEl.style.display = 'block';
+        // Hide the single "Update This Bracket" button
+        document.getElementById('update-bracket-btn').style.display = 'none';
+      } else {
+        selectorEl.style.display = 'none';
+        document.getElementById('update-bracket-btn').style.display = '';
+      }
     }
   } catch(e) {}
 }
 
 function showReenter() {
+  // Single bracket — just load it
+  showReenterById(currentParticipantId, null);
+}
+
+function showReenterById(id, bracketName) {
+  currentParticipantId = id;
+  picks = {};
+  // Reset MATCHES back to placeholders
+  MATCHES.qf.forEach((m,i) => { m.team1=`W R16-${i*2+1}`;m.flag1='🏳️';m.team2=`W R16-${i*2+2}`;m.flag2='🏳️'; });
+  MATCHES.sf.forEach((m,i) => { m.team1=`W QF-${i*2+1}`;m.flag1='🏳️';m.team2=`W QF-${i*2+2}`;m.flag2='🏳️'; });
+  MATCHES.final[0].team1='W SF-1';MATCHES.final[0].flag1='🏳️';
+  MATCHES.final[0].team2='W SF-2';MATCHES.final[0].flag2='🏳️';
   document.getElementById('enter-form-section').style.display = 'block';
   document.getElementById('already-entered').style.display = 'none';
   document.getElementById('reg-name').value = localStorage.getItem('bracket_name') || '';
@@ -1252,7 +1284,7 @@ async function loadMyBracket() {
 
   try {
     const [participants, results] = await Promise.all([
-      sbGet('participants', `email=eq.${encodeURIComponent(email)}`),
+      sbGet('participants', `email=eq.${encodeURIComponent(email)}&order=created_at.asc`),
       sbGet('results'),
     ]);
 
@@ -1261,29 +1293,41 @@ async function loadMyBracket() {
       return;
     }
 
-    const p = participants[0];
-    const brackets = await sbGet('brackets', `participant_id=eq.${p.id}`);
-    const myPicks = {};
-    brackets.forEach(b => { myPicks[b.match_id] = b.picked_team; });
-
     const resultMap = {};
     results.forEach(r => { resultMap[r.match_id] = r.winner; });
 
-    let score = 0;
-    let html = `<div class="card"><h2>${p.name}'s Bracket${p.bracket_name ? ` <span style="color:var(--muted);font-size:0.85rem">(${p.bracket_name})</span>` : ''}</h2>`;
-    html += renderPickDetail(myPicks, resultMap, p.tiebreaker);
+    // Load all brackets for this email
+    const allBracketRows = await Promise.all(
+      participants.map(p => sbGet('brackets', `participant_id=eq.${p.id}`))
+    );
 
-    // Calculate score
-    for (const [round, matches] of Object.entries(MATCHES)) {
-      const pts = ROUND_LABELS[round].pts;
-      matches.forEach(m => {
-        if (resultMap[m.id] && myPicks[m.id] === resultMap[m.id]) score += pts;
-      });
-    }
+    let html = '';
+    participants.forEach((p, idx) => {
+      const myPicks = {};
+      allBracketRows[idx].forEach(b => { myPicks[b.match_id] = b.picked_team; });
 
-    html += `<div style="margin-top:16px;padding-top:12px;border-top:1px solid var(--border);">
-      <span class="score-badge" style="font-size:1rem;padding:6px 18px;">Total: ${score} pts</span>
-    </div></div>`;
+      let score = 0;
+      for (const [round, matches] of Object.entries(MATCHES)) {
+        const pts = ROUND_LABELS[round].pts;
+        matches.forEach(m => {
+          if (resultMap[m.id] && myPicks[m.id] === resultMap[m.id]) score += pts;
+        });
+      }
+
+      const title = p.bracket_name
+        ? `${p.name} <span style="color:var(--muted);font-size:0.85rem">(${p.bracket_name})</span>`
+        : p.name;
+
+      html += `
+        <div class="card">
+          <h2>${title}</h2>
+          ${renderPickDetail(myPicks, resultMap, p.tiebreaker)}
+          <div style="margin-top:16px;padding-top:12px;border-top:1px solid var(--border);">
+            <span class="score-badge" style="font-size:1rem;padding:6px 18px;">Total: ${score} pts</span>
+          </div>
+        </div>
+      `;
+    });
 
     container.innerHTML = html;
   } catch(e) {
