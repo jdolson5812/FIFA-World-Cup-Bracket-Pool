@@ -568,7 +568,7 @@
       Pick the winner of every game from the Round of 16 through the Final.
       More points are awarded for correct picks in later rounds.
       Entry fee is <strong style="color:var(--text)">$25</strong> — pay Jeff on Venmo or donate directly to the Reeve Foundation below.
-      <strong style="color:var(--gold)">Brackets lock when the first R16 game kicks off (July 4).</strong><br><br>
+      <strong style="color:var(--gold)">Brackets lock July 4 at 1:00 PM ET when the first R16 game kicks off.</strong><br><br>
       <strong style="color:var(--text)">Prize pool:</strong> 50% to the winner · 50% donated to the Christopher &amp; Dana Reeve Foundation.
     </p>
     <div style="margin-top:14px;display:flex;flex-wrap:wrap;gap:10px;">
@@ -621,7 +621,7 @@
         Submit My Bracket
       </button>
       <p style="font-size:0.78rem;color:var(--muted);margin-top:8px;">
-        You can update your picks until brackets lock on July 4.
+        You can update your picks until brackets lock on July 4 at 1:00 PM ET.
       </p>
     </div>
   </div>
@@ -754,7 +754,7 @@ const SUPABASE_URL = 'https://nfcejzkorlrthazhfjxw.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5mY2VqemtvcmxydGhhemhmanh3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI4NTMwNTQsImV4cCI6MjA5ODQyOTA1NH0.VkVmledFs_f1G5KXkEK0AthiaqPa_53VPPHstRNuwBQ';
 const ENTRY_FEE = 25;
 const ADMIN_PASSWORD = 'reeve2026';
-const BRACKET_LOCK_DATE = new Date('2026-07-04T14:00:00-04:00'); // First R16 kickoff ~2pm ET
+const BRACKET_LOCK_DATE = new Date('2026-07-04T13:00:00-04:00'); // First R16 kickoff ~1pm ET
 
 // ══════════════════════════════════════════════════════
 // MATCH DATA
@@ -1521,7 +1521,7 @@ async function loadLiveBracket() {
 
     const lockNote = document.createElement('div');
     lockNote.style.cssText = 'font-size:0.78rem;color:var(--muted);margin-bottom:12px;text-align:right;';
-    lockNote.textContent = isLocked ? 'Brackets are locked.' : 'Brackets lock July 4 at 2:00 PM ET.';
+    lockNote.textContent = isLocked ? 'Brackets are locked.' : 'Brackets lock July 4 at 1:00 PM ET.';
     wrap.appendChild(lockNote);
 
     const bracketWrap = document.createElement('div');
